@@ -1,0 +1,41 @@
+# .NET
+**/bin/
+**/obj/
+**/*.user
+**/.vs/
+**/TestResults/
+**/coverage/
+**/*.coverage
+
+# Node / Vue
+**/node_modules/
+**/dist/
+**/.vite/
+**/npm-debug.log*
+
+# Env files (NUNCA subir claves reales)
+.env
+.env.local
+**/.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# ASP.NET Core - never commit dev/prod secrets
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/appsettings.Local.json
+
+# But DO commit a template version
+!**/appsettings.Development.json.example

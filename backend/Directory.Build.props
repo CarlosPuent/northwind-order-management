@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <!-- Use the latest C# language features -->
+    <LangVersion>latest</LangVersion>
+
+    <!-- Enable nullable reference types - prevents NullReferenceException at compile time -->
+    <Nullable>enable</Nullable>
+
+    <!-- Implicit using directives for common namespaces (System, System.Linq, etc.) -->
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Treat warnings as errors - keeps the codebase clean from day 1 -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Generate XML docs so IDE tooltips show our /// comments -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Suppress the warning about missing XML doc on every public member.
+         We document what matters; we don't want a warning on every getter. -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+</Project>
