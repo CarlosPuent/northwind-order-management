@@ -40,10 +40,10 @@ public static class DependencyInjection
         // ---- Application Services ----
         services.AddScoped<Northwind.Application.Orders.OrderService>();
 
+        // ---- Reporting ----
+        services.AddScoped<IInvoiceGenerator, Northwind.Infrastructure.Reporting.QuestPdfInvoiceGenerator>();
+
         // ---- Google Maps ----
-        // Bind the GoogleMaps config section, then override the ApiKey from
-        // environment variable if available. This is the standard pattern:
-        // appsettings defines structure and defaults, .env overrides secrets.
         services.Configure<GoogleMapsOptions>(opts =>
         {
             configuration.GetSection(GoogleMapsOptions.SectionName).Bind(opts);
@@ -57,11 +57,8 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
 
-        // Register the real geocoding service as a named/typed HttpClient.
         services.AddHttpClient<GoogleMapsGeocodingService>();
 
-        // Register the decorator chain: CachedGeocodingService wraps GoogleMapsGeocodingService.
-        // When anyone asks for IGeocodingService, they get the cached version.
         services.AddScoped<GoogleMapsGeocodingService>();
         services.AddScoped<IGeocodingService>(sp =>
         {
