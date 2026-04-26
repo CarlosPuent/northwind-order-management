@@ -35,6 +35,8 @@ public static class DependencyInjection
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IShippingGeocodeRepository, ShippingGeocodeRepository>();
 
+        services.AddScoped<Northwind.Application.Orders.OrderService>();
+
         return services;
     }
 }
