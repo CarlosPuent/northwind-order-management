@@ -41,8 +41,19 @@ public static class DependencyInjection
         services.AddScoped<Northwind.Application.Orders.OrderService>();
 
         // ---- Google Maps ----
-        services.Configure<GoogleMapsOptions>(
-            configuration.GetSection(GoogleMapsOptions.SectionName));
+        // Bind the GoogleMaps config section, then override the ApiKey from
+        // environment variable if available. This is the standard pattern:
+        // appsettings defines structure and defaults, .env overrides secrets.
+        services.Configure<GoogleMapsOptions>(opts =>
+        {
+            configuration.GetSection(GoogleMapsOptions.SectionName).Bind(opts);
+
+            var envKey = Environment.GetEnvironmentVariable("GOOGLE_MAPS_API_KEY");
+            if (!string.IsNullOrWhiteSpace(envKey))
+            {
+                opts.ApiKey = envKey;
+            }
+        });
 
         services.AddMemoryCache();
 
