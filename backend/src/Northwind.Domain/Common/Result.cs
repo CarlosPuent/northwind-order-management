@@ -34,6 +34,12 @@ public class Result
     // ---- Factory methods (with value) ----
     public static Result<T> Success<T>(T value) => new(value, true, Error.None);
     public static Result<T> Failure<T>(Error error) => new(default!, false, error);
+
+    /// <summary>
+    /// Implicit conversion so a method returning Result can simply `return error;`
+    /// instead of `return Result.Failure(error);`. Reads cleaner at the call site.
+    /// </summary>
+    public static implicit operator Result(Error error) => Failure(error);
 }
 
 /// <summary>
