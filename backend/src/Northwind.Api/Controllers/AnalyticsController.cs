@@ -1,0 +1,124 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Northwind.Infrastructure.Persistence;
+
+namespace Northwind.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class AnalyticsController : ControllerBase
+{
+    private readonly NorthwindDbContext _db;
+
+    public AnalyticsController(NorthwindDbContext db)
+    {
+        _db = db;
+    }
+
+    // =========================
+    // DTOs
+    // =========================
+    public sealed record OrdersOverTimeDto(
+        int Year,
+        int Month,
+        int OrderCount,
+        decimal TotalRevenue
+    );
+
+    public sealed record ShipmentsByRegionDto(
+        string Country,
+        int OrderCount
+    );
+
+    // =========================
+    // Orders Over Time
+    // =========================
+    [HttpGet("orders-over-time")]
+    public async Task<ActionResult<List<OrdersOverTimeDto>>> OrdersOverTime(
+        [FromQuery] int? year,
+        CancellationToken ct)
+    {
+        var orders = await _db.Orders
+            .AsNoTracking()
+            .Where(o => !year.HasValue || o.OrderDate.Year == year.Value)
+            .Select(o => new
+            {
+                o.Id,
+                o.OrderDate,
+                Lines = o.Lines.Select(l => new
+                {
+                    l.Quantity,
+                    l.Discount,
+                    Amount = l.UnitPrice.Amount
+                })
+            })
+            .ToListAsync(ct);
+
+        var result = orders
+            .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })
+            .Select(g => new OrdersOverTimeDto(
+                g.Key.Year,
+                g.Key.Month,
+                g.Count(),
+                g.Sum(o =>
+                    o.Lines.Sum(l =>
+                        l.Amount *
+                        l.Quantity *
+                        (1m - (decimal)l.Discount)
+                    )
+                )
+            ))
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    // =========================
+    // Shipments By Region
+    // =========================
+    [HttpGet("shipments-by-region")]
+    public async Task<ActionResult<List<ShipmentsByRegionDto>>> ShipmentsByRegion(
+        CancellationToken ct)
+    {
+        // 🔥 PROYECCIÓN CONTROLADA (clave)
+        var raw = await _db.Orders
+            .AsNoTracking()
+            .Select(o => new
+            {
+                Country = o.ShipAddress.Country
+            })
+            .ToListAsync(ct);
+
+        var result = raw
+            .Where(x => !string.IsNullOrWhiteSpace(x.Country))
+            .GroupBy(x => x.Country!)
+            .Select(g => new ShipmentsByRegionDto(
+                g.Key,
+                g.Count()
+            ))
+            .OrderByDescending(x => x.OrderCount)
+            .Take(10)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    // =========================
+    // Available Years
+    // =========================
+    [HttpGet("available-years")]
+    public async Task<ActionResult<List<int>>> AvailableYears(
+        CancellationToken ct)
+    {
+        var years = await _db.Orders
+            .AsNoTracking()
+            .Select(o => o.OrderDate.Year)
+            .Distinct()
+            .OrderByDescending(y => y)
+            .ToListAsync(ct);
+
+        return Ok(years);
+    }
+}

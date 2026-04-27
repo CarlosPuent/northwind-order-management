@@ -1,25 +1,14 @@
-// Quasar Sass (& SCSS) Variables
-// --------------------------------------------------
-// To customize the look and feel of this app, you can override
-// the Sass/SCSS variables found in Quasar's source Sass/SCSS files.
+// Northwind Traders brand palette
+// Applied globally to every Quasar component via CSS custom properties.
 
-// Check documentation for full list of Quasar variables
+$primary   : #1F3A5F;
+$secondary : #3D5A80;
+$accent    : #C8102E;
 
-// Your own variables (that are declared here) and Quasar's own
-// ones will be available out of the box in your .vue/.scss/.sass files
-
-// It's highly recommended to change the default colors
-// to match your app's branding.
-// Tip: Use the "Theme Builder" on Quasar's documentation website.
-
-$primary   : #1976D2;
-$secondary : #26A69A;
-$accent    : #9C27B0;
-
-$dark      : #1D1D1D;
+$dark      : #1A1A2E;
 $dark-page : #121212;
 
-$positive  : #21BA45;
-$negative  : #C10015;
-$info      : #31CCEC;
-$warning   : #F2C037;
+$positive  : #2D7A3E;
+$negative  : #C8102E;
+$info      : #3B82F6;
+$warning   : #F59E0B;
