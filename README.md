@@ -114,12 +114,27 @@ git clone https://github.com/CarlosPuent/northwind-order-management.git
 cd northwind-order-management
 ```
 
-### 2. Install the Northwind database
+### 2. Run with Docker (recommended)
 
-If you haven't already, run the official Northwind SQL script on your SQL Server instance:
+The easiest way to run the entire stack:
 
-- Download: [instnwnd.sql](https://github.com/microsoft/sql-server-samples/blob/master/samples/databases/northwind-pubs/instnwnd.sql)
-- Execute it in SQL Server Management Studio against your instance
+```bash
+# Set your Google Maps API key
+echo "GOOGLE_MAPS_API_KEY=your_key_here" > .env
+
+# Build and start all services
+docker compose up --build
+
+# Wait ~60 seconds for SQL Server to initialize and load Northwind data
+```
+
+Once running:
+- **Frontend:** http://localhost:9000
+- **Backend API:** http://localhost:5281/api/customers
+- **SQL Server:** localhost:1433 (sa / Northwind@2026!)
+
+To stop: `docker compose down`
+To reset the database: `docker compose down -v && docker compose up --build`
 
 ### 3. Configure the backend
 
