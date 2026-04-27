@@ -2,17 +2,22 @@ import { boot } from "quasar/wrappers";
 import axios from "axios";
 import { Notify } from "quasar";
 
+// In Docker, Nginx proxies /api/ to the backend container.
+// In local dev, we call the backend directly.
+const baseURL =
+  process.env.VUE_APP_API_URL ||
+  (window.location.port === "80" || window.location.port === ""
+    ? "/api"
+    : "http://localhost:5281/api");
+
 const api = axios.create({
-  baseURL: "http://localhost:5281/api",
+  baseURL,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Response interceptor — converts backend ProblemDetails errors
-// into Quasar notifications automatically. No component needs to
-// handle HTTP errors manually.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
