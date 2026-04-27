@@ -1,0 +1,38 @@
+{
+  "name": "frontend",
+  "version": "0.0.1",
+  "description": "Order Management System with geo-location service",
+  "productName": "Northwind Order Management",
+  "author": "Carlos Puente <accpmurillo233@gmail.com>",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "postinstall": "quasar prepare"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.4",
+    "apexcharts": "^5.10.6",
+    "axios": "^1.15.2",
+    "pinia": "^3.0.1",
+    "pinia-plugin-persistedstate": "^4.7.1",
+    "quasar": "^2.16.0",
+    "vue": "^3.5.22",
+    "vue-router": "^5.0.3",
+    "vue3-apexcharts": "^1.11.1",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^2.5.1",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8"
+  },
+  "engines": {
+    "node": "^28 || ^26 || ^24 || ^22.12",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1",
+    "pnpm": ">= 10.0.0"
+  }
+}
