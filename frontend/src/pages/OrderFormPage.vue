@@ -513,7 +513,6 @@ function filterProducts (val, update, index) {
     })
 }
 
-// ---- Address validation ----
 
 // ---- Debounced address validation (600ms after last keystroke) ----
 let debounceTimer = null

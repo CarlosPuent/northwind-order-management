@@ -358,7 +358,6 @@ function exportToExcel () {
   })
 }
 
-// ---- Export to PDF (print view) ----
 function exportToPdf () {
   const totalFreight = orders.value.reduce((sum, o) => sum + o.freight, 0)
   const grandTotal = orders.value.reduce((sum, o) => sum + o.total, 0)

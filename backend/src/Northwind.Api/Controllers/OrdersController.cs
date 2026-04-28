@@ -86,7 +86,6 @@ public sealed class OrdersController : ControllerBase
     // Maps domain errors to RFC 7807 ProblemDetails responses.
     // Each ErrorType maps to a specific HTTP status code.
     // ------------------------------------------------------------------
-
     private IActionResult ToProblemDetails(Error error)
     {
         var statusCode = error.Type switch

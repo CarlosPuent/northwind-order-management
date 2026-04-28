@@ -322,7 +322,7 @@ const baseOrdersChartConfig = {
   ],
   tooltip: {
   shared: true,
-  intersect: false, // 🔥 ESTA LÍNEA SOLUCIONA TODO
+  intersect: false, 
   y: {
     formatter: (val, { seriesIndex }) => {
       const numeric = Number(val) || 0;
@@ -359,7 +359,6 @@ const regionsChartOptions = ref({
   labels: [],
 });
 
-// Mutación dirigida de propiedades reactivas para optimizar ApexCharts
 watch(chartCategories, (newCategories) => {
   ordersChartOptions.value.xaxis.categories = newCategories;
 });
@@ -455,8 +454,7 @@ onMounted(async () => {
   const initialYear = await fetchYears();
   
   if (initialYear) {
-    // La mutación de este estado delega la ejecución de fetchOrders al watchDebounced, 
-    // garantizando una única fuente de la verdad.
+  
     selectedYear.value = initialYear;
   }
 });

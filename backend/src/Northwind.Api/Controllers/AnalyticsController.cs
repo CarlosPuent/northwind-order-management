@@ -82,7 +82,6 @@ public sealed class AnalyticsController : ControllerBase
     public async Task<ActionResult<List<ShipmentsByRegionDto>>> ShipmentsByRegion(
         CancellationToken ct)
     {
-        // 🔥 PROYECCIÓN CONTROLADA (clave)
         var raw = await _db.Orders
             .AsNoTracking()
             .Select(o => new
