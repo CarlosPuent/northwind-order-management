@@ -1,0 +1,121 @@
+### ==========================================
+### Northwind Order Management API — Test Requests
+### Base URL: http://localhost:5281/api
+### ==========================================
+
+### --- Customers ---
+
+### List all customers
+GET http://localhost:5281/api/customers
+Accept: application/json
+
+### Search customers by name
+GET http://localhost:5281/api/customers/search?q=Alfred
+Accept: application/json
+
+### --- Employees ---
+
+### List all employees
+GET http://localhost:5281/api/employees
+Accept: application/json
+
+### --- Shippers ---
+
+### List all shippers
+GET http://localhost:5281/api/shippers
+Accept: application/json
+
+### --- Products ---
+
+### Search products
+GET http://localhost:5281/api/products/search?q=chai
+Accept: application/json
+
+### --- Orders ---
+
+### List orders (paginated)
+GET http://localhost:5281/api/orders?page=1&pageSize=10
+Accept: application/json
+
+### List orders with filters
+GET http://localhost:5281/api/orders?page=1&pageSize=10&customerId=ALFKI&region=Western Europe
+Accept: application/json
+
+### Get order by ID
+GET http://localhost:5281/api/orders/10248
+Accept: application/json
+
+### Create a new order
+POST http://localhost:5281/api/orders
+Content-Type: application/json
+
+{
+  "customerId": "ALFKI",
+  "employeeId": 1,
+  "orderDate": "2026-04-27",
+  "shipName": "Alfreds Futterkiste",
+  "shipStreet": "Obere Str. 57",
+  "shipCity": "Berlin",
+  "shipRegion": null,
+  "shipPostalCode": "12209",
+  "shipCountry": "Germany",
+  "freight": 32.38,
+  "lines": [
+    { "productId": 11, "quantity": 12, "discount": 0 },
+    { "productId": 42, "quantity": 10, "discount": 0.05 }
+  ]
+}
+
+### Update an order (replace ORDER_ID with actual ID)
+PUT http://localhost:5281/api/orders/11078
+Content-Type: application/json
+
+{
+  "orderId": 11078,
+  "customerId": "ALFKI",
+  "employeeId": 2,
+  "shipperId": 1,
+  "shipName": "Alfreds Futterkiste - Updated",
+  "shipStreet": "Obere Str. 57",
+  "shipCity": "Berlin",
+  "shipRegion": null,
+  "shipPostalCode": "12209",
+  "shipCountry": "Germany",
+  "freight": 45.00,
+  "lines": [
+    { "productId": 11, "quantity": 20, "discount": 0.1 }
+  ]
+}
+
+### Delete an order (replace ORDER_ID with actual ID)
+DELETE http://localhost:5281/api/orders/11078
+
+### --- Geocoding ---
+
+### Validate an address
+GET http://localhost:5281/api/geocoding/validate?street=1600+Amphitheatre+Parkway&city=Mountain+View&country=USA
+Accept: application/json
+
+### --- Invoices ---
+
+### Download invoice PDF
+GET http://localhost:5281/api/invoices/10248
+Accept: application/pdf
+
+### --- Analytics ---
+
+### Orders over time (all years)
+GET http://localhost:5281/api/analytics/orders-over-time
+Accept: application/json
+
+### Orders over time (filtered by year)
+GET http://localhost:5281/api/analytics/orders-over-time?year=1997
+Accept: application/json
+
+### Shipments by region (top 10 countries)
+GET http://localhost:5281/api/analytics/shipments-by-region
+Accept: application/json
+
+### Available years for filtering
+GET http://localhost:5281/api/analytics/available-years
+Accept: application/json

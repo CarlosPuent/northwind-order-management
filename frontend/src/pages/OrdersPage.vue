@@ -301,27 +301,68 @@ function exportToExcel () {
     'Total': o.total,
   }))
 
+  // Add summary row
+  const totalFreight = orders.value.reduce((sum, o) => sum + o.freight, 0)
+  const grandTotal = orders.value.reduce((sum, o) => sum + o.total, 0)
+  exportData.push({
+    'Order #': '',
+    'Customer': '',
+    'Ship City': '',
+    'Country': '',
+    'Order Date': '',
+    'Status': '',
+    'Freight': totalFreight,
+    'Total': grandTotal,
+  })
+
   const ws = XLSX.utils.json_to_sheet(exportData)
 
-  // Set column widths for readability
+  // Column widths
   ws['!cols'] = [
-    { wch: 10 }, { wch: 15 }, { wch: 18 }, { wch: 15 },
-    { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 12 },
+    { wch: 10 }, { wch: 18 }, { wch: 18 }, { wch: 15 },
+    { wch: 14 }, { wch: 10 }, { wch: 12 }, { wch: 14 },
   ]
+
+  // Format currency columns (Freight = G, Total = H)
+  const range = XLSX.utils.decode_range(ws['!ref'])
+  for (let r = 1; r <= range.e.r; r++) {
+    const freightCell = ws[XLSX.utils.encode_cell({ r, c: 6 })]
+    const totalCell = ws[XLSX.utils.encode_cell({ r, c: 7 })]
+    if (freightCell) freightCell.z = '$#,##0.00'
+    if (totalCell) totalCell.z = '$#,##0.00'
+  }
 
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Orders')
+
+  // Add a metadata sheet with report info
+  const meta = XLSX.utils.aoa_to_sheet([
+    ['Northwind Traders — Orders Report'],
+    ['Generated', new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })],
+    ['Total Orders', orders.value.length],
+    ['Filters Applied', [
+      filters.customerId ? `Customer: ${filters.customerId}` : null,
+      filters.region ? `Region: ${filters.region}` : null,
+      filters.year ? `Year: ${filters.year}` : null,
+    ].filter(Boolean).join(', ') || 'None'],
+  ])
+  meta['!cols'] = [{ wch: 20 }, { wch: 40 }]
+  XLSX.utils.book_append_sheet(wb, meta, 'Report Info')
+
   XLSX.writeFile(wb, `Northwind_Orders_${new Date().toISOString().split('T')[0]}.xlsx`)
 
   $q.notify({
     type: 'positive',
-    message: `Exported ${exportData.length} orders to Excel`,
+    message: `Exported ${orders.value.length} orders to Excel`,
     position: 'top-right',
   })
 }
 
 // ---- Export to PDF (print view) ----
 function exportToPdf () {
+  const totalFreight = orders.value.reduce((sum, o) => sum + o.freight, 0)
+  const grandTotal = orders.value.reduce((sum, o) => sum + o.total, 0)
+
   const rows = orders.value.map(o =>
     `<tr>
       <td>${o.id}</td>
@@ -329,40 +370,106 @@ function exportToPdf () {
       <td>${o.shipCity}</td>
       <td>${o.shipCountry}</td>
       <td>${formatDate(o.orderDate)}</td>
-      <td>${o.isShipped ? 'Shipped' : 'Pending'}</td>
-      <td style="text-align:right">$${o.freight.toFixed(2)}</td>
-      <td style="text-align:right"><strong>$${o.total.toFixed(2)}</strong></td>
+      <td><span class="badge ${o.isShipped ? 'shipped' : 'pending'}">${o.isShipped ? 'Shipped' : 'Pending'}</span></td>
+      <td class="right">$${o.freight.toFixed(2)}</td>
+      <td class="right bold">$${o.total.toFixed(2)}</td>
     </tr>`
   ).join('')
+
+  const filtersText = [
+    filters.customerId ? `Customer: ${filters.customerId}` : null,
+    filters.region ? `Region: ${filters.region}` : null,
+    filters.year ? `Year: ${filters.year}` : null,
+  ].filter(Boolean).join(' · ') || 'No filters applied'
 
   const html = `
     <html>
     <head>
       <title>Northwind Orders Report</title>
       <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1A1A2E; }
-        h1 { color: #1F3A5F; font-size: 24px; margin-bottom: 4px; }
-        .subtitle { color: #64748B; font-size: 13px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #1F3A5F; color: white; padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #1A1A2E; }
+
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .brand { font-size: 28px; font-weight: 800; color: #1F3A5F; letter-spacing: 0.02em; }
+        .brand-sub { font-size: 12px; color: #64748B; font-style: italic; }
+        .report-title { text-align: right; }
+        .report-title h2 { font-size: 16px; color: #C8102E; text-transform: uppercase; letter-spacing: 0.08em; }
+        .report-title .date { font-size: 12px; color: #64748B; margin-top: 2px; }
+
+        .accent-bar { height: 4px; background: linear-gradient(90deg, #1F3A5F 70%, #C8102E 70%); margin-bottom: 20px; }
+
+        .meta { font-size: 12px; color: #64748B; margin-bottom: 20px; }
+        .meta span { font-weight: 600; color: #1F3A5F; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 24px; }
+        th {
+          background: #1F3A5F; color: white; padding: 10px 12px;
+          text-align: left; font-size: 11px; text-transform: uppercase;
+          letter-spacing: 0.06em; font-weight: 600;
+        }
         td { padding: 8px 12px; border-bottom: 1px solid #E2E8F0; }
         tr:nth-child(even) { background: #F8FAFC; }
-        .footer { margin-top: 20px; font-size: 11px; color: #94A3B8; }
+        .right { text-align: right; }
+        .bold { font-weight: 700; }
+
+        .badge {
+          display: inline-block; padding: 2px 8px; border-radius: 4px;
+          font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        .badge.shipped { background: #DEF7EC; color: #046C4E; }
+        .badge.pending { background: #FEF3C7; color: #92400E; }
+
+        .totals-row { background: #F1F5F9 !important; font-weight: 700; }
+        .totals-row td { border-top: 2px solid #1F3A5F; padding-top: 10px; }
+
+        .footer {
+          margin-top: 16px; padding-top: 12px; border-top: 1px solid #E2E8F0;
+          font-size: 10px; color: #94A3B8; display: flex; justify-content: space-between;
+        }
+
+        @media print {
+          body { padding: 20px; }
+          @page { margin: 1cm; }
+        }
       </style>
     </head>
     <body>
-      <h1>NORTHWIND TRADERS</h1>
-      <div class="subtitle">Orders Report · Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+      <div class="header">
+        <div>
+          <div class="brand">NORTHWIND TRADERS</div>
+          <div class="brand-sub">Global Shipping & Distribution</div>
+        </div>
+        <div class="report-title">
+          <h2>Orders Report</h2>
+          <div class="date">${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+        </div>
+      </div>
+      <div class="accent-bar"></div>
+
+      <div class="meta">${filtersText} · <span>${orders.value.length} orders</span></div>
+
       <table>
         <thead>
           <tr>
             <th>Order #</th><th>Customer</th><th>Ship City</th><th>Country</th>
-            <th>Date</th><th>Status</th><th style="text-align:right">Freight</th><th style="text-align:right">Total</th>
+            <th>Date</th><th>Status</th><th class="right">Freight</th><th class="right">Total</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>
+          ${rows}
+          <tr class="totals-row">
+            <td colspan="6" class="right">TOTALS</td>
+            <td class="right">$${totalFreight.toFixed(2)}</td>
+            <td class="right">$${grandTotal.toFixed(2)}</td>
+          </tr>
+        </tbody>
       </table>
-      <div class="footer">Northwind Traders · Order Management System · ${orders.value.length} orders</div>
+
+      <div class="footer">
+        <span>Northwind Traders · Order Management System</span>
+        <span>Confidential — Internal Use Only</span>
+      </div>
     </body>
     </html>
   `
