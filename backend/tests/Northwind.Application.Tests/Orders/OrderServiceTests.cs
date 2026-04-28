@@ -311,4 +311,117 @@ public class OrderServiceTests
         order.MarkAsShipped(DateTime.UtcNow);
         return order;
     }
+
+    // ==================================================================
+    // UpdateAsync
+    // ==================================================================
+
+    [Fact]
+    public async Task UpdateAsync_WithValidCommand_ShouldReturnSuccess()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1,
+            CustomerId: "ALFKI",
+            EmployeeId: 1,
+            ShipperId: null,
+            ShipName: "Jane Doe",
+            ShipStreet: "456 Oak Ave",
+            ShipCity: "LA",
+            ShipRegion: "CA",
+            ShipPostalCode: "90001",
+            ShipCountry: "USA",
+            Freight: 20m,
+            Lines: new List<OrderLineCommand> { new(11, 3, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithNonExistentOrder_ShouldReturnFailure()
+    {
+        _orderRepo.Setup(r => r.GetByIdAsync(999, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Order?)null);
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 999, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
+            ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
+            Freight: 0, Lines: new List<OrderLineCommand> { new(11, 1, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.NotFound");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithShippedOrder_ShouldReturnFailure()
+    {
+        var order = CreateShippedOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
+            ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
+            Freight: 0, Lines: new List<OrderLineCommand> { new(11, 1, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.NotEditable");
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithNoLines_ShouldReturnFailure()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
+            ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
+            Freight: 0, Lines: new List<OrderLineCommand>()
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.NoLines");
+    }
+
+    // ==================================================================
+    // GetPagedAsync
+    // ==================================================================
+
+    [Fact]
+    public async Task GetPagedAsync_ShouldReturnPagedResult()
+    {
+        var orders = new List<Order> { CreateSampleOrder() };
+        var paged = new Northwind.Application.Common.PagedResult<Order>(
+            orders.AsReadOnly(), 1, 10, 1);
+
+        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(paged);
+
+        var result = await _sut.GetPagedAsync(1, 10);
+
+        result.Items.Should().HaveCount(1);
+        result.TotalCount.Should().Be(1);
+    }
 }

@@ -42,6 +42,8 @@
                   input-debounce="300"
                   @filter="filterCustomers"
                   :rules="[val => !!val || 'Customer is required']"
+                  tabindex="1"
+                  :loading="customers.length === 0"
                 >
                   <template v-slot:option="scope">
                     <q-item v-bind="scope.itemProps">
@@ -64,6 +66,8 @@
                   label="Employee *"
                   class="col"
                   :rules="[val => !!val || 'Employee is required']"
+                  tabindex="2"
+                  :loading="employees.length === 0"
                 />
               </div>
 
@@ -75,6 +79,7 @@
                   label="Order Date *"
                   class="col"
                   :rules="[val => !!val || 'Date is required']"
+                  tabindex="3"
                 />
                 <q-input
                   v-model.number="form.freight"
@@ -84,6 +89,7 @@
                   class="col"
                   min="0"
                   step="0.01"
+                  tabindex="4"
                 />
               </div>
             </q-card-section>
@@ -100,6 +106,7 @@
                 label="Recipient Name *"
                 class="q-mb-md"
                 :rules="[val => !!val || 'Recipient name is required']"
+                tabindex="5"
               />
 
               <q-input
@@ -108,6 +115,7 @@
                 label="Street Address *"
                 class="q-mb-md"
                 :rules="[val => !!val || 'Street is required']"
+                tabindex="6"
               />
 
               <div class="row q-gutter-md">
@@ -117,12 +125,14 @@
                   label="City *"
                   class="col"
                   :rules="[val => !!val || 'City is required']"
+                  tabindex="7"
                 />
                 <q-input
                   v-model="form.shipRegion"
                   outlined
                   label="Region"
                   class="col"
+                  tabindex="8"
                 />
               </div>
 
@@ -132,6 +142,7 @@
                   outlined
                   label="Postal Code"
                   class="col"
+                  tabindex="9"
                 />
                 <q-input
                   v-model="form.shipCountry"
@@ -139,6 +150,7 @@
                   label="Country *"
                   class="col"
                   :rules="[val => !!val || 'Country is required']"
+                  tabindex="10"
                 />
               </div>
 
@@ -355,10 +367,13 @@
               </div>
 
               <div v-else class="text-center q-pa-xl text-grey-5">
-                <q-icon name="map" size="4em" class="q-mb-md" />
-                <div class="text-body2">
-                  Fill in the shipping address and click "Validate Address" to see the delivery location on the map.
-                </div>
+                <q-skeleton v-if="validatingAddress" type="rect" height="350px" class="q-mb-md" />
+                <template v-else>
+                  <q-icon name="map" size="4em" class="q-mb-md" />
+                  <div class="text-body2">
+                    Fill in the shipping address and the map will appear automatically after validation.
+                  </div>
+                </template>
               </div>
             </q-card-section>
           </q-card>
@@ -369,10 +384,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from 'src/boot/axios'
+import { useOrderDraftStore } from 'src/stores/order-draft'
 
 const route = useRoute()
 const router = useRouter()
@@ -499,6 +515,26 @@ function filterProducts (val, update, index) {
 
 // ---- Address validation ----
 
+// ---- Debounced address validation (600ms after last keystroke) ----
+let debounceTimer = null
+
+watch(
+  () => [form.shipStreet, form.shipCity, form.shipCountry],
+  () => {
+    // Clear previous result when address changes
+    geocodeResult.value = null
+    geocodeError.value = null
+
+    if (debounceTimer) clearTimeout(debounceTimer)
+
+    if (canValidateAddress.value) {
+      debounceTimer = setTimeout(() => {
+        validateAddress()
+      }, 600)
+    }
+  }
+)
+
 async function validateAddress () {
   validatingAddress.value = true
   geocodeResult.value = null
@@ -570,6 +606,7 @@ async function submitOrder () {
     }
 
     router.push({ name: 'orders' })
+    draftStore.clearDraft()
   } catch (err) {
     // Handled by Axios interceptor.
   } finally {
@@ -621,11 +658,43 @@ async function loadOrder () {
   }
 }
 
-// ---- Init ----
+// ---- Auto-save draft (every 3 seconds if form has data) ----
+const draftStore = useOrderDraftStore()
 
+let autoSaveTimer = null
+
+function startAutoSave () {
+  autoSaveTimer = setInterval(() => {
+    if (!isEdit.value && form.customerId) {
+      draftStore.saveDraft(form)
+    }
+  }, 3000)
+}
+
+// ---- Init ----
 onMounted(async () => {
   await loadReferenceData()
-  await loadOrder()
+
+  if (isEdit.value) {
+    await loadOrder()
+  } else if (draftStore.hasDraft && draftStore.getDraft()) {
+    // Offer to recover the unsaved draft
+    $q.dialog({
+      title: 'Recover unsaved order?',
+      message: 'You have an unsaved order draft from a previous session. Would you like to recover it?',
+      cancel: 'Start fresh',
+      ok: 'Recover draft',
+      persistent: true,
+      color: 'primary',
+    }).onOk(() => {
+      const saved = draftStore.getDraft()
+      Object.assign(form, saved)
+    }).onCancel(() => {
+      draftStore.clearDraft()
+    })
+  }
+
+  startAutoSave()
 })
 </script>
 
