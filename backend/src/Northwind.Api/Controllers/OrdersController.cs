@@ -16,16 +16,18 @@ public sealed class OrdersController : ControllerBase
         _orderService = orderService;
     }
 
-    /// <summary>GET /api/orders?page=1&amp;pageSize=20&amp;customerId=ALFKI&amp;region=Western Europe</summary>
+    /// <summary>GET /api/orders?page=1&amp;pageSize=20&amp;customerId=ALFKI&amp;region=Western Europe&amp;isShipped=true</summary>
     [HttpGet]
     public async Task<IActionResult> GetPaged(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string? customerId = null,
         [FromQuery] string? region = null,
+        [FromQuery] bool? isShipped = null, // <--- NUEVO PARÁMETRO EN LA URL
         CancellationToken cancellationToken = default)
     {
-        var result = await _orderService.GetPagedAsync(page, pageSize, customerId, region, cancellationToken);
+        // <--- Pasamos isShipped al servicio
+        var result = await _orderService.GetPagedAsync(page, pageSize, customerId, region, isShipped, cancellationToken);
         return Ok(result);
     }
 

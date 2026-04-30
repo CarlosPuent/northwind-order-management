@@ -51,9 +51,11 @@ public sealed class OrderService
         int pageSize,
         string? customerId = null,
         string? region = null,
+        bool? isShipped = null, // <--- MODIFICACIÓN AQUÍ: Se agregó el parámetro
         CancellationToken cancellationToken = default)
     {
-        var result = await _orders.GetPagedAsync(page, pageSize, customerId, region, cancellationToken);
+        // <--- MODIFICACIÓN AQUÍ: Se pasa isShipped al repositorio
+        var result = await _orders.GetPagedAsync(page, pageSize, customerId, region, isShipped, cancellationToken);
 
         var dtos = result.Items.Select(MapToDto).ToList().AsReadOnly();
         return new PagedResult<OrderDto>(dtos, result.Page, result.PageSize, result.TotalCount);
@@ -155,9 +157,6 @@ public sealed class OrderService
                 return assignResult.Error;
         }
 
-        // 4. Replace lines: remove all existing, then add new ones.
-        //    This is the simplest strategy for a CRUD form where the client
-        //    sends the full desired set of lines, not incremental changes.
         var existingProductIds = order.Lines.Select(l => l.ProductId).ToList();
         foreach (var pid in existingProductIds)
             order.RemoveLine(pid);

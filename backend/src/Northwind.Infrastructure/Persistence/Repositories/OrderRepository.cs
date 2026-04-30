@@ -20,22 +20,41 @@ internal sealed class OrderRepository : IOrderRepository
         int pageSize,
         string? customerId = null,
         string? region = null,
+        bool? isShipped = null, // <--- NUEVO PARÁMETRO
         CancellationToken cancellationToken = default)
     {
-        // Start with the full set of orders.
         var query = _db.Orders.AsNoTracking().AsQueryable();
 
-        // Apply filters only when provided — composable LINQ builds a single SQL query.
         if (!string.IsNullOrWhiteSpace(customerId))
             query = query.Where(o => o.CustomerId == customerId);
 
         if (!string.IsNullOrWhiteSpace(region))
-            query = query.Where(o => o.ShipAddress.Region == region);
+        {
+            var needle = region.Trim().ToLower();
+            query = query.Where(o =>
+                (o.ShipAddress.Region != null && o.ShipAddress.Region.ToLower().Contains(needle)) ||
+                (o.ShipAddress.Country != null && o.ShipAddress.Country.ToLower().Contains(needle)) ||
+                (o.ShipAddress.City != null && o.ShipAddress.City.ToLower().Contains(needle))
+            );
+        }
 
-        // Count before pagination (total across all pages).
+        // <--- NUEVA LÓGICA DE FILTRO POR STATUS --->
+        if (isShipped.HasValue)
+        {
+            if (isShipped.Value)
+            {
+                // IsShipped = true -> ShippedDate tiene valor
+                query = query.Where(o => o.ShippedDate != null);
+            }
+            else
+            {
+                // IsShipped = false -> ShippedDate es null (Pending)
+                query = query.Where(o => o.ShippedDate == null);
+            }
+        }
+
         var totalCount = await query.CountAsync(cancellationToken);
 
-        // Fetch the requested page, newest first.
         var items = await query
             .OrderByDescending(o => o.OrderDate)
             .Skip((page - 1) * pageSize)

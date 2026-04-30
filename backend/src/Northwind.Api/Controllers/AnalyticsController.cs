@@ -4,6 +4,10 @@ using Northwind.Infrastructure.Persistence;
 
 namespace Northwind.Api.Controllers;
 
+/// <summary>
+/// Analytics endpoints for the dashboard. All endpoints support
+/// optional year filtering so KPIs, charts, and tables stay consistent.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public sealed class AnalyticsController : ControllerBase
@@ -33,6 +37,9 @@ public sealed class AnalyticsController : ControllerBase
     // =========================
     // Orders Over Time
     // =========================
+    /// <summary>
+    /// Orders grouped by month. Used by the bar chart on the dashboard.
+    /// </summary>
     [HttpGet("orders-over-time")]
     public async Task<ActionResult<List<OrdersOverTimeDto>>> OrdersOverTime(
         [FromQuery] int? year,
@@ -78,12 +85,21 @@ public sealed class AnalyticsController : ControllerBase
     // =========================
     // Shipments By Region
     // =========================
+    /// <summary>
+    /// Shipments grouped by country. Supports optional year filter
+    /// so the donut chart stays consistent with the selected year.
+    /// </summary>
     [HttpGet("shipments-by-region")]
     public async Task<ActionResult<List<ShipmentsByRegionDto>>> ShipmentsByRegion(
+        [FromQuery] int? year,
         CancellationToken ct)
     {
-        var raw = await _db.Orders
-            .AsNoTracking()
+        var query = _db.Orders.AsNoTracking();
+
+        if (year.HasValue)
+            query = query.Where(o => o.OrderDate.Year == year.Value);
+
+        var raw = await query
             .Select(o => new
             {
                 Country = o.ShipAddress.Country
@@ -107,6 +123,9 @@ public sealed class AnalyticsController : ControllerBase
     // =========================
     // Available Years
     // =========================
+    /// <summary>
+    /// Available years for the year filter dropdown.
+    /// </summary>
     [HttpGet("available-years")]
     public async Task<ActionResult<List<int>>> AvailableYears(
         CancellationToken ct)
