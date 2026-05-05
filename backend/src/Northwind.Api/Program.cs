@@ -1,8 +1,18 @@
 using System.Reflection;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using Microsoft.OpenApi;
+using Northwind.Application.Orders.Validators;
 using Northwind.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ---- Validators (FluentValidation) ----
+// Register all validators from the Application assembly and hook them into
+// ASP.NET Core model binding so invalid requests are rejected early (400)
+// before reaching the service layer.
+builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderCommandValidator>();
+builder.Services.AddFluentValidationAutoValidation();
 
 // ---- Services ----
 builder.Services.AddControllers();
@@ -18,6 +28,10 @@ builder.Services.AddSwaggerGen(c =>
             REST API for managing Northwind Traders customer orders, shipments, and analytics.
 
             **Architecture**: Clean Architecture with 4 layers (Domain, Application, Infrastructure, API).
+
+            **Validation**:
+            - FluentValidation at the API boundary (400 Bad Request)
+            - Domain/service rules inside Application (422 Unprocessable Entity)
 
             **Key features**:
             - Full order lifecycle: create → fulfill → ship

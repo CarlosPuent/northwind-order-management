@@ -6,4 +6,5 @@ Get-Content "$PSScriptRoot\.env" | ForEach-Object {
 }
 
 Write-Host "Environment variables loaded from .env" -ForegroundColor Green
+Write-Host "Swagger UI: http://localhost:5281/swagger" -ForegroundColor Cyan
 dotnet run --project src/Northwind.Api
