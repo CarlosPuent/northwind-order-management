@@ -20,6 +20,8 @@ internal sealed class OrderRepository : IOrderRepository
         string? customerId = null,
         string? region = null,
         bool? isShipped = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
         var query = _db.Orders.AsNoTracking().AsQueryable();
@@ -46,6 +48,12 @@ internal sealed class OrderRepository : IOrderRepository
             else
                 query = query.Where(o => o.ShippedDate == null);
         }
+
+        if (fromDate.HasValue)
+            query = query.Where(o => o.OrderDate >= fromDate.Value);
+
+        if (toDate.HasValue)
+            query = query.Where(o => o.OrderDate <= toDate.Value);
 
         var totalCount = await query.CountAsync(cancellationToken);
 

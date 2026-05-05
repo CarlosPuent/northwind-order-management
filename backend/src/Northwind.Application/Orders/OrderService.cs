@@ -59,9 +59,12 @@ public sealed class OrderService
         string? customerId = null,
         string? region = null,
         bool? isShipped = null,
+        DateTime? fromDate = null,
+        DateTime? toDate = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _orders.GetPagedAsync(page, pageSize, customerId, region, isShipped, cancellationToken);
+        var result = await _orders.GetPagedAsync(
+            page, pageSize, customerId, region, isShipped, fromDate, toDate, cancellationToken);
         var dtos = result.Items.Select(o => MapToDto(o)).ToList().AsReadOnly();
         return new PagedResult<OrderDto>(dtos, result.Page, result.PageSize, result.TotalCount);
     }
@@ -181,6 +184,9 @@ public sealed class OrderService
         var order = await _orders.GetByIdAsync(cmd.OrderId, cancellationToken);
         if (order is null)
             return Error.NotFound("Order.NotFound", $"Order {cmd.OrderId} was not found.");
+
+        if (order.IsShipped)
+            return Error.Conflict("Order.AlreadyShipped", "Order has already been shipped.");
 
         var assignResult = order.AssignShipper(cmd.ShipperId);
         if (assignResult.IsFailure) return assignResult.Error;

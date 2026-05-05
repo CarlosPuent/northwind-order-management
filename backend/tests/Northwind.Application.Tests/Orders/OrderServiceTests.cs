@@ -420,7 +420,7 @@ public class OrderServiceTests
         var paged = new Northwind.Application.Common.PagedResult<Order>(
             orders.AsReadOnly(), 1, 10, 1);
 
-        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, null, null, null, It.IsAny<CancellationToken>()))
+        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, null, null, null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(paged);
 
         var result = await _sut.GetPagedAsync(1, 10);
@@ -428,4 +428,229 @@ public class OrderServiceTests
         result.Items.Should().HaveCount(1);
         result.TotalCount.Should().Be(1);
     }
+
+
+    // ==================================================================
+    // ShipAsync
+    // ==================================================================
+
+    [Fact]
+    public async Task ShipAsync_WithValidCommand_ShouldMarkOrderAsShipped()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new ShipOrderCommand(OrderId: 1, ShipperId: 2, ShippedDate: DateTime.UtcNow);
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.IsShipped.Should().BeTrue();
+        result.Value.ShipperId.Should().Be(2);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ShipAsync_ShouldUseProvidedShippedDate()
+    {
+        var order = CreateSampleOrder();
+        var expectedDate = new DateTime(2026, 5, 10, 0, 0, 0, DateTimeKind.Utc);
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new ShipOrderCommand(OrderId: 1, ShipperId: 2, ShippedDate: expectedDate);
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.ShippedDate.Should().Be(expectedDate);
+    }
+
+    [Fact]
+    public async Task ShipAsync_WithNonExistentOrder_ShouldReturnNotFound()
+    {
+        _orderRepo.Setup(r => r.GetByIdAsync(999, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Order?)null);
+
+        var cmd = new ShipOrderCommand(OrderId: 999, ShipperId: 1);
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.NotFound");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ShipAsync_WithAlreadyShippedOrder_ShouldReturnConflict()
+    {
+        var order = CreateShippedOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var cmd = new ShipOrderCommand(OrderId: 1, ShipperId: 2);
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.AlreadyShipped");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ShipAsync_WithInvalidShipperId_ShouldReturnValidationError()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var cmd = new ShipOrderCommand(OrderId: 1, ShipperId: 0);
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.InvalidShipper");
+    }
+
+    [Fact]
+    public async Task ShipAsync_ShouldLoadProductNamesInReturnedDto()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new ShipOrderCommand(OrderId: 1, ShipperId: 2, ShippedDate: DateTime.UtcNow);
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Lines.Should().HaveCount(1);
+        // FakeProduct names are "Product {id}" — confirms product lookup ran
+        result.Value.Lines[0].ProductName.Should().Be("Product 11");
+    }
+
+    // ==================================================================
+    // CreateAsync — geocode scenarios
+    // ==================================================================
+
+    [Fact]
+    public async Task CreateAsync_WithoutGeocode_ShouldNotCallGeocodeRepository()
+    {
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var result = await _sut.CreateAsync(ValidCreateCommand());
+
+        result.IsSuccess.Should().BeTrue();
+        // No geocode provided → repository must never be called
+        _geocodeRepo.Verify(r => r.Upsert(It.IsAny<ShippingGeocode>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithGeocode_WhenOrderIdIsZero_ShouldNotUpsertGeocode()
+    {
+        // In unit tests EF Core does not run, so order.Id stays 0 after SaveChanges.
+        // The service guards on order.Id > 0 — geocode is only saved in the real DB flow.
+        // This test documents that invariant explicitly.
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = ValidCreateCommand() with
+        {
+            Geocode = new GeocodeCommandData(13.997, -89.547, "establishment", "{}")
+        };
+
+        var result = await _sut.CreateAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        // order.Id == 0 in tests → guard prevents upsert
+        _geocodeRepo.Verify(r => r.Upsert(It.IsAny<ShippingGeocode>()), Times.Never);
+    }
+
+    // ==================================================================
+    // GetPagedAsync — filter scenarios
+    // ==================================================================
+
+    [Fact]
+    public async Task GetPagedAsync_WithIsShippedTrue_ShouldPassFilterToRepository()
+    {
+        var paged = new Northwind.Application.Common.PagedResult<Order>(
+            new List<Order>().AsReadOnly(), 1, 10, 0);
+        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, null, null, true, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(paged);
+
+        var result = await _sut.GetPagedAsync(1, 10, isShipped: true);
+
+        _orderRepo.Verify(
+            r => r.GetPagedAsync(1, 10, null, null, true, null, null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_WithCustomerFilter_ShouldPassToRepository()
+    {
+        var paged = new Northwind.Application.Common.PagedResult<Order>(
+            new List<Order>().AsReadOnly(), 1, 10, 0);
+        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, "ALFKI", null, null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(paged);
+
+        var result = await _sut.GetPagedAsync(1, 10, customerId: "ALFKI");
+
+        _orderRepo.Verify(
+            r => r.GetPagedAsync(1, 10, "ALFKI", null, null, null, null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetPagedAsync_WithRegionFilter_ShouldPassToRepository()
+    {
+        var paged = new Northwind.Application.Common.PagedResult<Order>(
+            new List<Order>().AsReadOnly(), 1, 10, 0);
+        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, null, "Germany", null, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(paged);
+
+        var result = await _sut.GetPagedAsync(1, 10, region: "Germany");
+
+        _orderRepo.Verify(
+            r => r.GetPagedAsync(1, 10, null, "Germany", null, null, null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    // ==================================================================
+    // GetByIdAsync — product names
+    // ==================================================================
+
+    [Fact]
+    public async Task GetByIdAsync_ShouldLoadProductNamesForLines()
+    {
+        var order = CreateSampleOrder(); // has line with productId=11
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var result = await _sut.GetByIdAsync(1);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Lines[0].ProductName.Should().Be("Product 11");
+        _productRepo.Verify(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_WhenProductNotFound_ShouldFallbackToProductId()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Product?)null);
+
+        var result = await _sut.GetByIdAsync(1);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Lines[0].ProductName.Should().Be("Product #11");
+    }
 }
+
+

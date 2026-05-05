@@ -34,6 +34,13 @@ public sealed class AnalyticsController : ControllerBase
         int OrderCount
     );
 
+    public sealed record TopCustomerDto(
+        string CustomerId,
+        string CompanyName,
+        int OrderCount,
+        decimal TotalRevenue
+    );
+
     // =========================
     // Orders Over Time
     // =========================
@@ -115,6 +122,64 @@ public sealed class AnalyticsController : ControllerBase
             ))
             .OrderByDescending(x => x.OrderCount)
             .Take(10)
+            .ToList();
+
+        return Ok(result);
+    }
+
+    // =========================
+    // Top Customers
+    // =========================
+    /// <summary>
+    /// Returns the top N customers by revenue for the given year.
+    /// GET /api/analytics/top-customers?year=1997&amp;limit=5
+    /// </summary>
+    [HttpGet("top-customers")]
+    public async Task<ActionResult<List<TopCustomerDto>>> TopCustomers(
+        [FromQuery] int? year,
+        [FromQuery] int limit = 5,
+        CancellationToken ct = default)
+    {
+        var query = _db.Orders.AsNoTracking();
+
+        if (year.HasValue)
+            query = query.Where(o => o.OrderDate.Year == year.Value);
+
+        var raw = await query
+            .Select(o => new
+            {
+                o.CustomerId,
+                Lines = o.Lines.Select(l => new
+                {
+                    l.Quantity,
+                    l.Discount,
+                    Amount = l.UnitPrice.Amount
+                })
+            })
+            .ToListAsync(ct);
+
+        // Join customer names from a separate query to avoid N+1
+        var customerIds = raw.Select(o => o.CustomerId).Distinct().ToList();
+        var customers = await _db.Customers
+            .AsNoTracking()
+            .Where(c => customerIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.CompanyName })
+            .ToDictionaryAsync(c => c.Id, c => c.CompanyName, ct);
+
+        var result = raw
+            .GroupBy(o => o.CustomerId)
+            .Select(g => new TopCustomerDto(
+                CustomerId: g.Key,
+                CompanyName: customers.GetValueOrDefault(g.Key, g.Key),
+                OrderCount: g.Count(),
+                TotalRevenue: g.Sum(o =>
+                    o.Lines.Sum(l =>
+                        l.Amount * l.Quantity * (1m - (decimal)l.Discount)
+                    )
+                )
+            ))
+            .OrderByDescending(x => x.TotalRevenue)
+            .Take(Math.Clamp(limit, 1, 20))
             .ToList();
 
         return Ok(result);
