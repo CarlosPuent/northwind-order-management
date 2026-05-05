@@ -267,6 +267,11 @@
                     :loading="products.length === 0"
                     popup-content-class="order-form-dropdown"
                   >
+                    <template v-slot:selected-item>
+                      <span v-if="line.productName">{{ line.productName }}</span>
+                      <span v-else class="text-grey-5">Search product...</span>
+                    </template>
+
                     <template v-slot:option="scope">
                       <q-item v-bind="scope.itemProps" dense class="q-py-sm">
                         <q-item-section>
@@ -473,7 +478,13 @@ const grandTotal = computed(() =>
 )
 
 function addLine () {
-  form.lines.push({ productId: null, quantity: 1, unitPrice: 0, discount: 0 })
+  form.lines.push({
+    productId: null,
+    productName: '',
+    quantity: 1,
+    unitPrice: 0,
+    discount: 0,
+  })
 }
 
 function removeLine (index) {
@@ -483,11 +494,11 @@ function removeLine (index) {
 function onProductSelected (index) {
   const line = form.lines[index]
   if (!line.productId) return
-  
-  // Find product from our global list of products
-  const product = products.value.find(p => p.id === line.productId)
+  const allProducts = Object.values(filteredProducts.value).flat()
+  const product = allProducts.find(p => p.id === line.productId)
   if (product) {
     line.unitPrice = product.unitPrice
+    line.productName = product.productName
   }
 }
 
@@ -664,6 +675,7 @@ async function loadOrder () {
     form.shipCountry = data.shipCountry
     form.lines = data.lines.map(l => ({
       productId: l.productId,
+      productName: products.value.find(p => p.id === l.productId)?.productName || l.productName || '',
       quantity: l.quantity,
       unitPrice: l.unitPrice,
       discount: l.discount,

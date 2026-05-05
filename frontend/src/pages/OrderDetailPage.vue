@@ -50,7 +50,7 @@
           <q-icon name="check_circle" color="positive" />
         </template>
         Shipped on {{ formatDate(order.shippedDate) }}
-        <span v-if="order.shipperId"> via Shipper #{{ order.shipperId }}</span>
+        <span v-if="order.shipperId"> via {{ shipperName }}</span>
       </q-banner>
 
       <!-- Info Cards -->
@@ -74,7 +74,7 @@
             <div class="q-mt-sm">
               <div class="row q-mb-xs">
                 <div class="col-5 text-grey-7">Customer:</div>
-                <div class="col text-weight-medium">{{ order.customerId }}</div>
+                <div class="col">{{ customerName }}</div>
               </div>
               <div class="row q-mb-xs">
                 <div class="col-5 text-grey-7">Employee:</div>
@@ -248,6 +248,22 @@ const lineColumns = [
   { name: 'lineTotal', label: 'Line Total', field: 'lineTotal', align: 'right' },
 ]
 
+
+const customers = ref([])
+
+async function loadCustomers () {
+  try {
+    const { data } = await api.get('/customers')
+    customers.value = data
+  } catch (err) {}
+}
+
+const customerName = computed(() => {
+  if (!order.value) return '—'
+  const c = customers.value.find(c => c.id === order.value.customerId)
+  return c ? c.companyName : order.value.customerId
+})
+
 async function loadOrder () {
   loading.value = true
   try {
@@ -322,6 +338,6 @@ function formatDate (dateStr) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadOrder(), loadShippers(), loadEmployees()])
+  await Promise.all([loadOrder(), loadShippers(), loadEmployees(), loadCustomers()])
 })
 </script>

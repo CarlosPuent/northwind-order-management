@@ -175,14 +175,13 @@ public sealed class OrderService
     /// of truth for IsShipped — Northwind has no Status column.
     /// </summary>
     public async Task<Result<OrderDto>> ShipAsync(
-        ShipOrderCommand cmd,
-        CancellationToken cancellationToken = default)
+       ShipOrderCommand cmd,
+       CancellationToken cancellationToken = default)
     {
         var order = await _orders.GetByIdAsync(cmd.OrderId, cancellationToken);
         if (order is null)
             return Error.NotFound("Order.NotFound", $"Order {cmd.OrderId} was not found.");
 
-        // Assign shipper first — MarkAsShipped requires it.
         var assignResult = order.AssignShipper(cmd.ShipperId);
         if (assignResult.IsFailure) return assignResult.Error;
 
@@ -190,7 +189,16 @@ public sealed class OrderService
         if (markResult.IsFailure) return markResult.Error;
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return MapToDto(order);
+
+        var productNames = new Dictionary<int, string>();
+        foreach (var pid in order.Lines.Select(l => l.ProductId).Distinct())
+        {
+            var product = await _products.GetByIdAsync(pid, cancellationToken);
+            if (product is not null)
+                productNames[pid] = product.ProductName;
+        }
+
+        return MapToDto(order, productNames);
     }
 
     public async Task<Result> DeleteAsync(
@@ -257,7 +265,6 @@ public sealed class OrderService
         Lines = order.Lines.Select(l => new OrderLineDto
         {
             ProductId = l.ProductId,
-            // FIX: Use loaded product names dictionary, fallback to "Product #{id}"
             ProductName = productNames?.GetValueOrDefault(l.ProductId) ?? $"Product #{l.ProductId}",
             UnitPrice = l.UnitPrice.Amount,
             Quantity = l.Quantity,

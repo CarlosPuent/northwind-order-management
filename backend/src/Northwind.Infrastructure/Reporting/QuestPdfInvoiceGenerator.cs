@@ -6,6 +6,7 @@ using Northwind.Infrastructure.GoogleMaps;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using System.Globalization;
 
 namespace Northwind.Infrastructure.Reporting;
 
@@ -96,7 +97,8 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
                         .FontSize(11).Bold().FontColor(TextMuted).LetterSpacing(0.15f);
                     col.Item().AlignRight().Text($"#{order.Id:D6}")
                         .FontSize(20).Bold().FontColor(BrandAccent);
-                    col.Item().AlignRight().PaddingTop(4).Text($"{order.OrderDate:MMMM dd, yyyy}")
+                    col.Item().AlignRight().PaddingTop(4)
+                        .Text(order.OrderDate.ToString("MMMM dd, yyyy", CultureInfo.InvariantCulture))
                         .FontSize(9).FontColor(TextMuted);
                 });
             });
@@ -129,7 +131,7 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
                     row.AutoItem().Background(BrandSuccess).Padding(4).PaddingHorizontal(10)
                         .Text("SHIPPED").FontSize(8).Bold().FontColor(Colors.White);
                     row.AutoItem().PaddingLeft(8).AlignMiddle()
-                        .Text($"Shipped on {order.ShippedDate:MMM dd, yyyy}")
+                        .Text($"Shipped on {order.ShippedDate?.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture)}")
                         .FontSize(8).FontColor(TextMuted);
                 }
                 else
@@ -158,7 +160,7 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
                 {
                     $"Processed by: {employeeName}",
                     $"Carrier: {shipperName ?? "Not yet assigned"}",
-                    $"Required by: {order.RequiredDate?.ToString("MMM dd, yyyy") ?? "No deadline"}",
+                    $"Required by: {order.RequiredDate?.ToString("MMM dd, yyyy", CultureInfo.InvariantCulture) ?? "No deadline"}",
                     $"Freight charge: ${order.Freight.Amount:N2}"
                 }));
             });
