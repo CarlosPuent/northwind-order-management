@@ -78,11 +78,11 @@
               </div>
               <div class="row q-mb-xs">
                 <div class="col-5 text-grey-7">Employee:</div>
-                <div class="col">{{ order.employeeId }}</div>
+                <div class="col">{{ employeeName }}</div>
               </div>
               <div class="row q-mb-xs">
                 <div class="col-5 text-grey-7">Shipper:</div>
-                <div class="col">{{ order.shipperId || 'Not assigned' }}</div>
+                <div class="col">{{ shipperName }}</div>
               </div>
               <div class="row q-mb-xs" v-if="order.shippedDate">
                 <div class="col-5 text-grey-7">Shipped:</div>
@@ -221,7 +221,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from 'src/boot/axios'
@@ -231,6 +231,7 @@ const $q = useQuasar()
 const order = ref(null)
 const loading = ref(true)
 const shippers = ref([])
+const employees = ref([])
 const showShipDialog = ref(false)
 const shipping = ref(false)
 
@@ -265,6 +266,26 @@ async function loadShippers () {
     shippers.value = data
   } catch (err) {}
 }
+
+async function loadEmployees () {
+  try {
+    const { data } = await api.get('/employees')
+    employees.value = data
+  } catch (err) {}
+}
+
+// Helper functions to get names
+const employeeName = computed(() => {
+  if (!order.value) return '—'
+  const emp = employees.value.find(e => e.id === order.value.employeeId)
+  return emp ? emp.fullName : `Employee #${order.value.employeeId}`
+})
+
+const shipperName = computed(() => {
+  if (!order.value || !order.value.shipperId) return 'Not assigned'
+  const shipper = shippers.value.find(s => s.id === order.value.shipperId)
+  return shipper ? shipper.companyName : `Shipper #${order.value.shipperId}`
+})
 
 async function confirmShip () {
   if (!shipForm.shipperId) return
@@ -301,6 +322,6 @@ function formatDate (dateStr) {
 }
 
 onMounted(async () => {
-  await Promise.all([loadOrder(), loadShippers()])
+  await Promise.all([loadOrder(), loadShippers(), loadEmployees()])
 })
 </script>

@@ -18,6 +18,10 @@ public interface IInvoiceGenerator
     /// <param name="employeeName">The employee's full name for display.</param>
     /// <param name="shipperName">The shipper's company name, or null if not assigned.</param>
     /// <param name="geocode">Optional geocode for the map thumbnail.</param>
+    /// <param name="productNames">
+    /// Optional map of ProductId → ProductName so the invoice shows real names
+    /// instead of "Product #ID". Populated by the controller before calling GenerateAsync.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task<Result<byte[]>> GenerateAsync(
         Order order,
@@ -25,5 +29,6 @@ public interface IInvoiceGenerator
         string employeeName,
         string? shipperName,
         ShippingGeocode? geocode,
+        Dictionary<int, string>? productNames = null,
         CancellationToken cancellationToken = default);
 }

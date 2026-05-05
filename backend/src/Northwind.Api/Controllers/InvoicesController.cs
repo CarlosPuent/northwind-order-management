@@ -13,6 +13,7 @@ public sealed class InvoicesController : ControllerBase
     private readonly IEmployeeRepository _employees;
     private readonly IShipperRepository _shippers;
     private readonly IShippingGeocodeRepository _geocodes;
+    private readonly IProductRepository _products;
     private readonly IInvoiceGenerator _invoiceGenerator;
 
     public InvoicesController(
@@ -21,6 +22,7 @@ public sealed class InvoicesController : ControllerBase
         IEmployeeRepository employees,
         IShipperRepository shippers,
         IShippingGeocodeRepository geocodes,
+        IProductRepository products,
         IInvoiceGenerator invoiceGenerator)
     {
         _orders = orders;
@@ -28,13 +30,11 @@ public sealed class InvoicesController : ControllerBase
         _employees = employees;
         _shippers = shippers;
         _geocodes = geocodes;
+        _products = products;
         _invoiceGenerator = invoiceGenerator;
     }
 
-    /// <summary>
-    /// Generates and returns a styled PDF invoice for the given order.
-    /// GET /api/invoices/10248
-    /// </summary>
+    /// <summary>GET /api/invoices/10248</summary>
     [HttpGet("{orderId:int}")]
     public async Task<IActionResult> Generate(int orderId, CancellationToken cancellationToken)
     {
@@ -42,8 +42,10 @@ public sealed class InvoicesController : ControllerBase
         if (order is null)
             return NotFound(new { error = $"Order {orderId} not found." });
 
+        // Sequential await — EF Core DbContext cannot run parallel queries.
         var customer = await _customers.GetByIdAsync(order.CustomerId, cancellationToken);
         var employee = await _employees.GetByIdAsync(order.EmployeeId, cancellationToken);
+        var geocode = await _geocodes.GetByOrderIdAsync(orderId, cancellationToken);
 
         string? shipperName = null;
         if (order.ShipperId.HasValue)
@@ -52,7 +54,14 @@ public sealed class InvoicesController : ControllerBase
             shipperName = shipper?.CompanyName;
         }
 
-        var geocode = await _geocodes.GetByOrderIdAsync(orderId, cancellationToken);
+        // Load product names for all line items.
+        var productNames = new Dictionary<int, string>();
+        foreach (var pid in order.Lines.Select(l => l.ProductId).Distinct())
+        {
+            var product = await _products.GetByIdAsync(pid, cancellationToken);
+            if (product is not null)
+                productNames[pid] = product.ProductName;
+        }
 
         var result = await _invoiceGenerator.GenerateAsync(
             order,
@@ -60,11 +69,12 @@ public sealed class InvoicesController : ControllerBase
             employee != null ? $"{employee.FirstName} {employee.LastName}" : "Unknown Employee",
             shipperName,
             geocode,
+            productNames,
             cancellationToken);
 
         if (result.IsFailure)
             return StatusCode(500, new { error = result.Error.Message });
 
-        return File(result.Value, "application/pdf", $"Invoice-{orderId}.pdf");
+        return File(result.Value, "application/pdf", $"Invoice-{orderId:D6}.pdf");
     }
 }

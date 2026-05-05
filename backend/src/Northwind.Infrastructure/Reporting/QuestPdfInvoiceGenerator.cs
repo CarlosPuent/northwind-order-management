@@ -40,6 +40,7 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
         string employeeName,
         string? shipperName,
         ShippingGeocode? geocode,
+        Dictionary<int, string>? productNames = null,
         CancellationToken cancellationToken = default)
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -57,7 +58,7 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
 
                     page.Header().Element(c => ComposeHeader(c, order));
                     page.Content().Element(c => ComposeContent(
-                        c, order, customerName, employeeName, shipperName, geocode));
+                        c, order, customerName, employeeName, shipperName, geocode, productNames));
                     page.Footer().Element(ComposeFooter);
                 });
             }).GeneratePdf();
@@ -115,11 +116,12 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
         string customerName,
         string employeeName,
         string? shipperName,
-        ShippingGeocode? geocode)
+        ShippingGeocode? geocode,
+        Dictionary<int, string>? productNames)
     {
         container.PaddingVertical(12).Column(col =>
         {
-            // Status badge.
+            // Status badge
             col.Item().PaddingBottom(8).Row(row =>
             {
                 if (order.IsShipped)
@@ -134,10 +136,13 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
                 {
                     row.AutoItem().Background(WarningBadge).Padding(4).PaddingHorizontal(10)
                         .Text("PENDING").FontSize(8).Bold().FontColor(Colors.White);
+                    row.AutoItem().PaddingLeft(8).AlignMiddle()
+                        .Text("Awaiting fulfillment")
+                        .FontSize(8).FontColor(TextMuted).Italic();
                 }
             });
 
-            // Info cards.
+            // Info cards
             col.Item().Row(row =>
             {
                 row.RelativeItem().Element(c => ComposeInfoCard(c, "SHIP TO", new[]
@@ -148,9 +153,7 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
                     FormatCityLine(order.ShipAddress.City, order.ShipAddress.Region, order.ShipAddress.PostalCode),
                     order.ShipAddress.Country
                 }));
-
                 row.ConstantItem(15);
-
                 row.RelativeItem().Element(c => ComposeInfoCard(c, "ORDER INFO", new[]
                 {
                     $"Processed by: {employeeName}",
@@ -165,19 +168,14 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
             col.Item().PaddingBottom(6).Text("LINE ITEMS")
                 .FontSize(10).Bold().FontColor(BrandPrimary).LetterSpacing(0.1f);
 
-            // Line items table.
-            col.Item().Element(c => ComposeTable(c, order));
+            // Pass productNames to the table
+            col.Item().Element(c => ComposeTable(c, order, productNames));
 
             col.Item().PaddingVertical(8);
-
-            // Totals.
             col.Item().AlignRight().Width(260).Element(c => ComposeTotals(c, order));
 
-            // Map thumbnail.
             if (geocode != null && !string.IsNullOrWhiteSpace(_mapsOptions.ApiKey))
-            {
                 col.Item().PaddingTop(20).Element(c => ComposeMapSection(c, geocode));
-            }
         });
     }
 
@@ -204,71 +202,78 @@ internal sealed class QuestPdfInvoiceGenerator : IInvoiceGenerator
     // Line items table (all inline — avoids type compatibility issues)
     // ------------------------------------------------------------------
 
-    private static void ComposeTable(IContainer container, Order order)
+    private static void ComposeTable(IContainer container, Order order, Dictionary<int, string>? productNames)
     {
         container.Border(1).BorderColor(BorderLight).Table(table =>
         {
             table.ColumnsDefinition(cols =>
             {
-                cols.ConstantColumn(40);
+                cols.ConstantColumn(32);
                 cols.RelativeColumn(3);
                 cols.ConstantColumn(80);
-                cols.ConstantColumn(50);
+                cols.ConstantColumn(45);
                 cols.ConstantColumn(65);
-                cols.ConstantColumn(90);
+                cols.ConstantColumn(85);
             });
 
-            // Header row — built inline to avoid API version mismatches.
             table.Header(header =>
             {
-                header.Cell().Background(BrandPrimary).PaddingVertical(7).PaddingHorizontal(8)
-                    .Text("#").FontColor(Colors.White).Bold().FontSize(8).AlignCenter();
-
-                header.Cell().Background(BrandPrimary).PaddingVertical(7).PaddingHorizontal(8)
-                    .Text("Product").FontColor(Colors.White).Bold().FontSize(8);
-
-                header.Cell().Background(BrandPrimary).PaddingVertical(7).PaddingHorizontal(8)
-                    .Text("Unit Price").FontColor(Colors.White).Bold().FontSize(8).AlignRight();
-
-                header.Cell().Background(BrandPrimary).PaddingVertical(7).PaddingHorizontal(8)
-                    .Text("Qty").FontColor(Colors.White).Bold().FontSize(8).AlignCenter();
-
-                header.Cell().Background(BrandPrimary).PaddingVertical(7).PaddingHorizontal(8)
-                    .Text("Discount").FontColor(Colors.White).Bold().FontSize(8).AlignCenter();
-
-                header.Cell().Background(BrandPrimary).PaddingVertical(7).PaddingHorizontal(8)
-                    .Text("Total").FontColor(Colors.White).Bold().FontSize(8).AlignRight();
+                void HeaderCell(string text, bool alignRight = false)
+                {
+                    var cell = header.Cell().Background(BrandPrimary)
+                        .PaddingVertical(7).PaddingHorizontal(8);
+                    var txt = cell.Text(text).FontColor(Colors.White).Bold().FontSize(8);
+                    if (alignRight) txt.AlignRight();
+                    else if (text == "#") txt.AlignCenter();
+                }
+                HeaderCell("#");
+                HeaderCell("Product");
+                HeaderCell("Unit Price", true);
+                HeaderCell("Qty");
+                HeaderCell("Discount");
+                HeaderCell("Total", true);
             });
 
-            // Data rows with alternating background.
             var lineNumber = 1;
             foreach (var line in order.Lines)
             {
                 var rowBg = lineNumber % 2 == 0 ? TableRowAlt : Colors.White;
 
+                // # column
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(BorderLight)
-                    .PaddingVertical(5).PaddingHorizontal(8)
+                    .PaddingVertical(6).PaddingHorizontal(8)
                     .Text($"{lineNumber}").FontSize(9).AlignCenter();
 
+                // Product name column — shows real name, falls back to "Product #ID"
+                var productName = productNames?.GetValueOrDefault(line.ProductId)
+                    ?? $"Product #{line.ProductId}";
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(BorderLight)
-                    .PaddingVertical(5).PaddingHorizontal(8)
-                    .Text($"Product #{line.ProductId}").FontSize(9);
+                    .PaddingVertical(6).PaddingHorizontal(8)
+                    .Column(col =>
+                    {
+                        col.Item().Text(productName).FontSize(9).Bold();
+                        col.Item().Text($"ID: {line.ProductId}").FontSize(7).FontColor(TextMuted);
+                    });
 
+                // Unit price
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(BorderLight)
-                    .PaddingVertical(5).PaddingHorizontal(8)
+                    .PaddingVertical(6).PaddingHorizontal(8)
                     .Text($"${line.UnitPrice.Amount:N2}").FontSize(9).AlignRight();
 
+                // Qty
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(BorderLight)
-                    .PaddingVertical(5).PaddingHorizontal(8)
+                    .PaddingVertical(6).PaddingHorizontal(8)
                     .Text($"{line.Quantity}").FontSize(9).AlignCenter();
 
+                // Discount
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(BorderLight)
-                    .PaddingVertical(5).PaddingHorizontal(8)
+                    .PaddingVertical(6).PaddingHorizontal(8)
                     .Text(line.Discount > 0 ? $"{line.Discount:P0}" : "—").FontSize(9).AlignCenter();
 
+                // Line total
                 table.Cell().Background(rowBg).BorderBottom(1).BorderColor(BorderLight)
-                    .PaddingVertical(5).PaddingHorizontal(8)
-                    .Text($"${line.LineTotal.Amount:N2}").FontSize(9).AlignRight();
+                    .PaddingVertical(6).PaddingHorizontal(8)
+                    .Text($"${line.LineTotal.Amount:N2}").FontSize(9).Bold().AlignRight();
 
                 lineNumber++;
             }

@@ -115,33 +115,6 @@
               </div>
 
               <div class="row q-col-gutter-md">
-                <q-select
-                  v-model="form.shipperId"
-                  :options="shippers"
-                  option-value="id"
-                  option-label="companyName"
-                  emit-value
-                  map-options
-                  outlined
-                  label="Shipper"
-                  class="col-12 col-sm-4 elegant-input"
-                  clearable
-                  hide-bottom-space
-                  tabindex="3"
-                >
-                  <template v-slot:option="scope">
-                    <q-item v-bind="scope.itemProps" dense>
-                      <q-item-section avatar>
-                        <q-icon name="local_shipping" color="grey-6" size="xs" />
-                      </q-item-section>
-                      <q-item-section>
-                        <q-item-label class="text-weight-medium text-grey-9">{{ scope.opt.companyName }}</q-item-label>
-                        <q-item-label caption>{{ scope.opt.phone || 'No phone' }}</q-item-label>
-                      </q-item-section>
-                    </q-item>
-                  </template>
-                </q-select>
-
                 <q-input
                   v-model="form.orderDate"
                   outlined
@@ -458,7 +431,6 @@ const form = reactive({
 const customers = ref([])
 const filteredCustomers = ref([])
 const employees = ref([])
-const shippers = ref([])
 
 // New products reference
 const products = ref([])
@@ -656,10 +628,9 @@ async function submitOrder () {
 
 async function loadReferenceData () {
   try {
-    const [custRes, empRes, shipRes, prodRes] = await Promise.all([
+    const [custRes, empRes, prodRes] = await Promise.all([
       api.get('/customers'),
       api.get('/employees'),
-      api.get('/shippers'),
       api.get('/products') // Load all products upfront
     ])
     
@@ -667,7 +638,6 @@ async function loadReferenceData () {
     filteredCustomers.value = custRes.data.slice(0, 30)
     
     employees.value = empRes.data
-    shippers.value = shipRes.data
     
     // Save products to local reference
     products.value = prodRes.data
