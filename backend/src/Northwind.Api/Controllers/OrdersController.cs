@@ -84,6 +84,22 @@ public sealed class OrdersController : ControllerBase
             : ToProblemDetails(result.Error);
     }
 
+
+    /// <summary>POST /api/orders/10248/ship — marks the order as shipped</summary>
+    [HttpPost("{id:int}/ship")]
+    public async Task<IActionResult> Ship(
+        int id,
+        [FromBody] ShipOrderRequest request,
+        CancellationToken cancellationToken)
+    {
+        var cmd = new ShipOrderCommand(id, request.ShipperId, request.ShippedDate);
+        var result = await _orderService.ShipAsync(cmd, cancellationToken);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : ToProblemDetails(result.Error);
+    }
+
+    public sealed record ShipOrderRequest(int ShipperId, DateTime? ShippedDate = null);
     // ------------------------------------------------------------------
     // Maps domain errors to RFC 7807 ProblemDetails responses.
     // Each ErrorType maps to a specific HTTP status code.

@@ -624,8 +624,15 @@ async function submitOrder () {
         quantity: l.quantity,
         discount: l.discount || 0,
       })),
+      // Include geocode result if the user validated the address before submitting.
+      // This saves the geocode to ShippingGeocodes table automatically.
+      geocode: geocodeResult.value ? {
+        latitude: geocodeResult.value.latitude,
+        longitude: geocodeResult.value.longitude,
+        placeType: geocodeResult.value.placeType,
+        rawResponse: '',
+      } : null,
     }
-
     if (isEdit.value) {
       payload.orderId = parseInt(route.params.id)
       payload.shipperId = form.shipperId || null

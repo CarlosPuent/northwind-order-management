@@ -12,15 +12,14 @@ internal sealed class OrderRepository : IOrderRepository
     public OrderRepository(NorthwindDbContext db) => _db = db;
 
     public async Task<Order?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
-        => await _db.Orders
-            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        => await _db.Orders.FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
 
     public async Task<PagedResult<Order>> GetPagedAsync(
         int page,
         int pageSize,
         string? customerId = null,
         string? region = null,
-        bool? isShipped = null, // <--- NUEVO PARÁMETRO
+        bool? isShipped = null,
         CancellationToken cancellationToken = default)
     {
         var query = _db.Orders.AsNoTracking().AsQueryable();
@@ -28,29 +27,24 @@ internal sealed class OrderRepository : IOrderRepository
         if (!string.IsNullOrWhiteSpace(customerId))
             query = query.Where(o => o.CustomerId == customerId);
 
+        // Searches Region, Country, AND City so "Germany", "Berlin",
+        // and "Western Europe" all return relevant results.
         if (!string.IsNullOrWhiteSpace(region))
         {
             var needle = region.Trim().ToLower();
             query = query.Where(o =>
                 (o.ShipAddress.Region != null && o.ShipAddress.Region.ToLower().Contains(needle)) ||
                 (o.ShipAddress.Country != null && o.ShipAddress.Country.ToLower().Contains(needle)) ||
-                (o.ShipAddress.City != null && o.ShipAddress.City.ToLower().Contains(needle))
-            );
+                (o.ShipAddress.City != null && o.ShipAddress.City.ToLower().Contains(needle)));
         }
 
-        // <--- NUEVA LÓGICA DE FILTRO POR STATUS --->
+        // Filter by shipped status derived from ShippedDate.
         if (isShipped.HasValue)
         {
             if (isShipped.Value)
-            {
-                // IsShipped = true -> ShippedDate tiene valor
                 query = query.Where(o => o.ShippedDate != null);
-            }
             else
-            {
-                // IsShipped = false -> ShippedDate es null (Pending)
                 query = query.Where(o => o.ShippedDate == null);
-            }
         }
 
         var totalCount = await query.CountAsync(cancellationToken);

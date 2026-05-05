@@ -1,9 +1,5 @@
 namespace Northwind.Application.Orders.Commands;
 
-/// <summary>
-/// Data required to update an existing order. Lines are replaced wholesale —
-/// the client sends the full desired set of lines, not a diff.
-/// </summary>
 public sealed record UpdateOrderCommand(
     int OrderId,
     string CustomerId,
@@ -16,4 +12,6 @@ public sealed record UpdateOrderCommand(
     string? ShipPostalCode,
     string ShipCountry,
     decimal Freight,
-    List<OrderLineCommand> Lines);
+    List<OrderLineCommand> Lines,
+    GeocodeCommandData? Geocode = null
+);

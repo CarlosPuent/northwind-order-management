@@ -1,10 +1,22 @@
 namespace Northwind.Application.Orders.Commands;
 
 /// <summary>
-/// Data required to create a new order. This is a CQRS-lite command —
-/// a plain DTO that describes intent, not a full MediatR command.
-/// Validation happens in OrderService, not in the DTO itself.
+/// Data passed from the geocoding validation result on the frontend.
+/// Saved as a ShippingGeocode record when the order is created.
 /// </summary>
+public sealed record GeocodeCommandData(
+    double Latitude,
+    double Longitude,
+    string PlaceType,
+    string RawResponse
+);
+
+public sealed record OrderLineCommand(
+    int ProductId,
+    short Quantity,
+    float Discount
+);
+
 public sealed record CreateOrderCommand(
     string CustomerId,
     int EmployeeId,
@@ -16,12 +28,7 @@ public sealed record CreateOrderCommand(
     string? ShipPostalCode,
     string ShipCountry,
     decimal Freight,
-    List<OrderLineCommand> Lines);
-
-/// <summary>
-/// A single line item in a create/update order command.
-/// </summary>
-public sealed record OrderLineCommand(
-    int ProductId,
-    short Quantity,
-    float Discount);
+    List<OrderLineCommand> Lines,
+    // Optional: present when the user validated the address before submitting
+    GeocodeCommandData? Geocode = null
+);

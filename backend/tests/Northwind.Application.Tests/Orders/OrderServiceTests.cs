@@ -17,9 +17,9 @@ namespace Northwind.Application.Tests.Orders;
 public class OrderServiceTests
 {
     // ---- Shared mocks ----
-
     private readonly Mock<IOrderRepository> _orderRepo = new();
     private readonly Mock<IProductRepository> _productRepo = new();
+    private readonly Mock<IShippingGeocodeRepository> _geocodeRepo = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly OrderService _sut;
 
@@ -28,7 +28,11 @@ public class OrderServiceTests
         _unitOfWork.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
 
-        _sut = new OrderService(_orderRepo.Object, _productRepo.Object, _unitOfWork.Object);
+        _sut = new OrderService(
+            _orderRepo.Object,
+            _productRepo.Object,
+            _geocodeRepo.Object,
+            _unitOfWork.Object);
     }
 
     // ---- Helpers ----
@@ -416,7 +420,7 @@ public class OrderServiceTests
         var paged = new Northwind.Application.Common.PagedResult<Order>(
             orders.AsReadOnly(), 1, 10, 1);
 
-        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, null, null, It.IsAny<CancellationToken>()))
+        _orderRepo.Setup(r => r.GetPagedAsync(1, 10, null, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(paged);
 
         var result = await _sut.GetPagedAsync(1, 10);
