@@ -204,4 +204,32 @@ public sealed class AnalyticsController : ControllerBase
 
         return Ok(years);
     }
+
+    /// <summary>
+    /// Returns the most recently validated delivery locations from ShippingGeocodes.
+    /// Used by the dashboard map widget.
+    /// </summary>
+    [HttpGet("delivery-locations")]
+    public async Task<ActionResult> DeliveryLocations(
+        [FromQuery] int limit = 20,
+        CancellationToken ct = default)
+    {
+        var locations = await _db.ShippingGeocodes
+            .AsNoTracking()
+            .OrderByDescending(g => g.ValidatedAt)
+            .Take(Math.Clamp(limit, 1, 50))
+            .Select(g => new
+            {
+                g.OrderId,
+                Latitude = g.Coordinates.Latitude,
+                Longitude = g.Coordinates.Longitude,
+                City = g.StandardizedAddress.City,
+                Country = g.StandardizedAddress.Country,
+                PlaceType = g.PlaceType,
+                ValidatedAt = g.ValidatedAt
+            })
+            .ToListAsync(ct);
+
+        return Ok(locations);
+    }
 }
