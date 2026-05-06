@@ -14,18 +14,49 @@ A production-style order management system built on the Northwind dataset. Featu
 
 ## Quick Start (Docker — recommended)
 
-The entire stack runs with a single command. No SQL Server, .NET, or Node.js required.
+The entire stack runs with a single command. No SQL Server, .NET, or Node.js required — only Docker Desktop.
 
-**Requirements:** [Docker Desktop](https://www.docker.com/products/docker-desktop) · A [Google Maps API Key](https://console.cloud.google.com/)
+### Step 1 — Install Docker Desktop
+
+Download and install from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop). Make sure it is running before continuing.
+
+### Step 2 — Clone the repository
 
 ```bash
 git clone https://github.com/CarlosPuent/northwind-order-management.git
 cd northwind-order-management
+```
 
-# Create the .env file with your Google Maps API key
+### Step 3 — Create the `.env` file
+
+The `.env` file is not included in the repository. You must create it manually in the root folder with your Google Maps API key.
+
+**Windows (PowerShell):**
+
+```powershell
+New-Item .env -ItemType File
+Add-Content .env "GOOGLE_MAPS_API_KEY=your_key_here"
+```
+
+**Mac / Linux:**
+
+```bash
 echo "GOOGLE_MAPS_API_KEY=your_key_here" > .env
+```
 
-# Build and start all services
+Or simply create a file named `.env` in the root folder with this content:
+
+```
+GOOGLE_MAPS_API_KEY=your_key_here
+```
+
+> Replace `your_key_here` with the API key provided by the project author.  
+> The key must have **Geocoding API**, **Maps JavaScript API**, and **Maps Static API** enabled.  
+> If you received a key from the author, use that — it already has everything configured.
+
+### Step 4 — Start everything
+
+```bash
 docker compose up --build
 ```
 
@@ -37,7 +68,14 @@ Docker will automatically:
 4. Start the .NET 10 API
 5. Build and serve the Vue 3 frontend via Nginx
 
-**Wait ~2 minutes** for the database to initialize, then open:
+**Wait ~2 minutes** for the database to initialize. You will see this in the logs when everything is ready:
+
+```
+db-1  | Database initialization complete.
+api-1 | Now listening on: http://[::]:5281
+```
+
+Then open:
 
 | Service  | URL                           |
 | -------- | ----------------------------- |
@@ -49,18 +87,6 @@ Docker will automatically:
 
 **To stop:** `docker compose down`  
 **To reset everything (including database):** `docker compose down -v && docker compose up --build`
-
----
-
-## Google Maps API Key
-
-The following APIs must be enabled in [Google Cloud Console](https://console.cloud.google.com/):
-
-- Geocoding API
-- Maps JavaScript API
-- Maps Static API
-
-Address validation and the delivery map on the dashboard require a valid key. All other features (orders, analytics, PDF invoices, exports) work without it.
 
 ---
 
