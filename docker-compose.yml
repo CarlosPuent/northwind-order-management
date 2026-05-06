@@ -1,5 +1,4 @@
 services:
-  # ---- SQL Server with Northwind pre-loaded ----
   db:
     build:
       context: ./docker/sql
@@ -19,7 +18,6 @@ services:
       retries: 15
       start_period: 40s
 
-  # ---- Backend API ----
   api:
     build:
       context: ./backend
@@ -34,11 +32,12 @@ services:
       db:
         condition: service_healthy
 
-  # ---- Frontend (Nginx) ----
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_MAPS_API_KEY: "${GOOGLE_MAPS_API_KEY}"   # ← NUEVO
     ports:
       - "9000:80"
     depends_on:

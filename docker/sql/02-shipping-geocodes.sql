@@ -1,7 +1,6 @@
 USE Northwind;
 GO
 
--- Only create if not exists (idempotent)
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'ShippingGeocodes')
 BEGIN
     CREATE TABLE [dbo].[ShippingGeocodes] (
@@ -34,7 +33,6 @@ BEGIN
 END
 GO
 
--- Create EF Core migrations history if not exists
 IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = '__EFMigrationsHistory')
 BEGIN
     CREATE TABLE [dbo].[__EFMigrationsHistory] (
@@ -45,12 +43,10 @@ BEGIN
 END
 GO
 
--- Mark migration as applied so EF Core doesn't try to re-apply it
 IF NOT EXISTS (SELECT * FROM [dbo].[__EFMigrationsHistory] WHERE [MigrationId] = '20260426033624_InitialCreate')
 BEGIN
     INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion])
     VALUES ('20260426033624_InitialCreate', '10.0.0');
-
     PRINT 'Migration marked as applied in __EFMigrationsHistory.';
 END
 GO

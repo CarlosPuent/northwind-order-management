@@ -1,0 +1,3 @@
+# Force LF for shell scripts and SQL — critical for Docker on Linux
+*.sh    text eol=lf
+*.sql   text eol=lf

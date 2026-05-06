@@ -2,7 +2,10 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
-# Copy everything first, then install and build
+# Accept the Maps key at build time so Vite can embed it in the bundle
+ARG VITE_GOOGLE_MAPS_API_KEY
+ENV VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY
+
 COPY . .
 RUN npm ci
 RUN npx quasar build
