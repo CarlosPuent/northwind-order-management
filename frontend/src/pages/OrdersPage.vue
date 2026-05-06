@@ -1,7 +1,6 @@
 <template>
   <q-page class="bg-grey-1" padding>
     <div class="page-container q-mx-auto" style="max-width: 1300px;">
-      <!-- Header -->
       <div class="row items-center q-mb-xl q-mt-md">
         <div class="col">
           <div class="text-h4 text-weight-bolder text-grey-9 tracking-tight">Orders</div>
@@ -20,112 +19,103 @@
         </div>
       </div>
 
-      <!-- Filters -->
       <q-card flat class="mac-card q-mb-lg">
-        <q-card-section class="q-pa-lg">
-          <div class="row q-col-gutter-md items-center">
+        <q-card-section class="q-pa-md">
+          <div class="row items-center justify-between" style="gap: 16px;">
+            
+            <div class="row items-center q-gutter-sm col-grow">
+              <q-select
+                v-model="filters.customerId"
+                :options="filteredCustomers"
+                option-value="id"
+                option-label="companyName"
+                emit-value
+                map-options
+                clearable
+                outlined
+                dense
+                label="Customer"
+                class="elegant-input"
+                style="flex-grow: 1; min-width: 220px; max-width: 400px;"
+                use-input
+                input-debounce="200"
+                hide-bottom-space
+                @filter="filterCustomerOptions"
+                @update:model-value="resetAndLoad"
+              >
+                <template v-slot:selected-item="scope">
+                  <span class="text-grey-9 text-weight-medium text-truncate">{{ scope.opt.companyName }}</span>
+                </template>
+                <template v-slot:option="scope">
+                  <q-item v-bind="scope.itemProps" dense class="q-py-sm">
+                    <q-item-section>
+                      <q-item-label class="text-weight-medium text-grey-9">{{ scope.opt.companyName }}</q-item-label>
+                      <q-item-label caption class="text-grey-6">{{ scope.opt.city }}, {{ scope.opt.country }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
 
-            <q-select
-              v-model="filters.customerId"
-              :options="filteredCustomers"
-              option-value="id"
-              option-label="companyName"
-              emit-value
-              map-options
-              clearable
-              outlined
-              label="Customer"
-              class="col-12 col-md-2 col-lg-3 elegant-input"
-              use-input
-              input-debounce="200"
-              hide-bottom-space
-              @filter="filterCustomerOptions"
-              @update:model-value="resetAndLoad"
-            >
-              <template v-slot:selected-item="scope">
-                <span class="text-grey-9 text-weight-medium">{{ scope.opt.companyName }}</span>
-              </template>
-              <template v-slot:option="scope">
-                <q-item v-bind="scope.itemProps" dense class="q-py-sm">
-                  <q-item-section>
-                    <q-item-label class="text-weight-medium text-grey-9">{{ scope.opt.companyName }}</q-item-label>
-                    <q-item-label caption class="text-grey-6">{{ scope.opt.city }}, {{ scope.opt.country }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
+              <q-select
+                v-model="filters.status"
+                :options="statusOptions"
+                emit-value
+                map-options
+                clearable
+                outlined
+                dense
+                label="Status"
+                class="elegant-input"
+                style="width: 140px;"
+                hide-bottom-space
+                @update:model-value="resetAndLoad"
+              >
+                <template v-slot:selected-item="scope">
+                  <span class="text-grey-9 text-weight-medium">{{ scope.opt.label }}</span>
+                </template>
+              </q-select>
 
-            <q-input
-              v-model="filters.region"
-              outlined
-              label="Search region, country, or city"
-              clearable
-              class="col-12 col-md-2 col-lg-3 elegant-input"
-              debounce="400"
-              hide-bottom-space
-              @update:model-value="resetAndLoad"
-            >
-              <template v-slot:prepend>
-                <q-icon name="search" size="xs" color="grey-6" />
-              </template>
-            </q-input>
+              <q-input
+                v-model="filters.fromDate"
+                type="date"
+                label="From"
+                outlined
+                dense
+                clearable
+                class="elegant-input"
+                style="width: 160px;"
+                hide-bottom-space
+                @update:model-value="resetAndLoad"
+              />
 
-            <q-select
-              v-model="filters.status"
-              :options="statusOptions"
-              emit-value
-              map-options
-              clearable
-              outlined
-              label="Status"
-              class="col-6 col-md-auto elegant-input"
-              style="width: 140px;"
-              hide-bottom-space
-              @update:model-value="resetAndLoad"
-            >
-              <template v-slot:selected-item="scope">
-                <span class="text-grey-9 text-weight-medium">{{ scope.opt.label }}</span>
-              </template>
+              <q-input
+                v-model="filters.toDate"
+                type="date"
+                label="To"
+                outlined
+                dense
+                clearable
+                class="elegant-input"
+                style="width: 160px;"
+                hide-bottom-space
+                @update:model-value="resetAndLoad"
+              />
 
-            <q-input
-              v-model="filters.fromDate"
-              type="date"
-              label="From"
-              dense
-              outlined
-              clearable
-              style="min-width:130px"
-              class="col-6 col-md-auto elegant-input"
-              hide-bottom-space
-              @update:model-value="resetAndLoad"
-            />
+              <q-select
+                v-model="filters.year"
+                :options="yearOptions"
+                clearable
+                outlined
+                dense
+                label="Year"
+                class="elegant-input"
+                style="width: 110px;"
+                hide-bottom-space
+                @update:model-value="resetAndLoad"
+              />
+            </div>
 
-            <q-input
-              v-model="filters.toDate"
-              type="date"
-              label="To"
-              dense
-              outlined
-              clearable
-              style="min-width:130px"
-              class="col-6 col-md-auto elegant-input"
-              hide-bottom-space
-              @update:model-value="resetAndLoad"
-            />
-
-            <q-select
-              v-model="filters.year"
-              :options="yearOptions"
-              clearable
-              outlined
-              label="Year"
-              class="col-6 col-md-auto elegant-input"
-              style="width: 140px;"
-              hide-bottom-space
-              @update:model-value="resetAndLoad"
-            />
-
-            <div class="col-12 col-md-auto row q-gutter-sm justify-end items-center">
+            <div class="row items-center q-gutter-sm">
               <q-btn-group flat class="elegant-btn-group">
                 <q-btn flat no-caps text-color="green-8" class="export-btn" @click="exportToExcel" :disable="orders.length === 0">
                   <q-icon name="table_chart" size="18px" class="q-mr-sm" />
@@ -140,15 +130,15 @@
                 </q-btn>
               </q-btn-group>
 
-              <q-btn flat round color="grey-7" icon="refresh" class="refresh-btn q-ml-sm" @click="loadOrders">
+              <q-btn flat round color="grey-7" icon="refresh" class="refresh-btn" @click="loadOrders">
                 <q-tooltip class="bg-grey-9">Refresh Data</q-tooltip>
               </q-btn>
             </div>
+
           </div>
         </q-card-section>
       </q-card>
 
-      <!-- Orders Table -->
       <q-table
         :rows="orders"
         :columns="columns"
@@ -227,7 +217,6 @@
           </q-td>
         </template>
 
-        <!-- Professional Pagination -->
         <template v-slot:bottom="scope">
           <div class="row full-width items-center q-py-sm">
             <div class="col-auto row items-center text-caption text-grey-7 q-gutter-sm">
@@ -581,6 +570,12 @@ onMounted(() => {
 }
 .page-container {
   padding-bottom: 60px;
+}
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 /* Apple-style Cards */

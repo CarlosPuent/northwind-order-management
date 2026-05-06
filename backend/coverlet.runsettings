@@ -6,11 +6,11 @@
         <Configuration>
           <Format>cobertura</Format>
           <Exclude>
-            [Northwind.Infrastructure]Northwind.Infrastructure.Persistence.Migrations.*,
-            [Northwind.Infrastructure]Northwind.Infrastructure.Persistence.NorthwindDbContextModelSnapshot,
+            [Northwind.Infrastructure]*,
+            [Northwind.Api]Northwind.Api.Program,
             [Northwind.Api]Microsoft.AspNetCore.OpenApi.*,
             [Northwind.Api]System.Runtime.CompilerServices.*,
-            [Northwind.Api]Program
+            [*.Tests]*
           </Exclude>
           <ExcludeByFile>
             **/Migrations/**,

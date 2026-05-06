@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Northwind.Application.Abstractions;
 using Northwind.Application.Abstractions.Persistence;
+using Northwind.Application.Orders;
 using Northwind.Infrastructure.GoogleMaps;
 using Northwind.Infrastructure.Persistence;
 using Northwind.Infrastructure.Persistence.Repositories;
@@ -38,7 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IShippingGeocodeRepository, ShippingGeocodeRepository>();
 
         // ---- Application Services ----
-        services.AddScoped<Northwind.Application.Orders.OrderService>();
+        services.AddScoped<IOrderService, OrderService>();
 
         // ---- Reporting ----
         services.AddScoped<IInvoiceGenerator, Northwind.Infrastructure.Reporting.QuestPdfInvoiceGenerator>();

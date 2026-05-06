@@ -1,0 +1,62 @@
+Summary
+  Generated on: 6/5/2026 - 14:45:52
+  Coverage date: 6/5/2026 - 14:45:45 - 6/5/2026 - 14:45:48
+  Parser: MultiReport (2x Cobertura)
+  Assemblies: 3
+  Classes: 36
+  Files: 32
+  Line coverage: 80.3%
+  Covered lines: 943
+  Uncovered lines: 231
+  Coverable lines: 1174
+  Total lines: 2406
+  Branch coverage: 81.6% (205 of 251)
+  Covered branches: 205
+  Total branches: 251
+  Method coverage: 84.1% (213 of 253)
+  Full method coverage: 81% (205 of 253)
+  Covered methods: 213
+  Fully covered methods: 205
+  Total methods: 253
+
+Northwind.Api                                                           65.1%
+  Northwind.Api.Controllers.AnalyticsController                            0%
+  Northwind.Api.Controllers.CustomersController                          100%
+  Northwind.Api.Controllers.EmployeesController                          100%
+  Northwind.Api.Controllers.GeocodingController                          100%
+  Northwind.Api.Controllers.InvoicesController                          89.7%
+  Northwind.Api.Controllers.OrdersController                            96.8%
+  Northwind.Api.Controllers.ProductsController                           100%
+  Northwind.Api.Controllers.ShippersController                           100%
+  Program                                                                100%
+
+Northwind.Application                                                   90.6%
+  Northwind.Application.Abstractions.GeocodingResult                     100%
+  Northwind.Application.Common.PagedResult<T>                           78.5%
+  Northwind.Application.Orders.Commands.CreateOrderCommand               100%
+  Northwind.Application.Orders.Commands.GeocodeCommandData              33.3%
+  Northwind.Application.Orders.Commands.OrderLineCommand                 100%
+  Northwind.Application.Orders.Commands.ShipOrderCommand                 100%
+  Northwind.Application.Orders.Commands.UpdateOrderCommand               100%
+  Northwind.Application.Orders.Dtos.OrderDto                             100%
+  Northwind.Application.Orders.Dtos.OrderLineDto                         100%
+  Northwind.Application.Orders.OrderService                             85.8%
+  Northwind.Application.Orders.Validators.CreateOrderCommandValidator    100%
+  Northwind.Application.Orders.Validators.ShipOrderCommandValidator      100%
+  Northwind.Application.Orders.Validators.UpdateOrderCommandValidator    100%
+
+Northwind.Domain                                                        87.8%
+  Northwind.Domain.Common.Entity<T>                                      100%
+  Northwind.Domain.Common.Error                                         85.7%
+  Northwind.Domain.Common.Result                                        94.1%
+  Northwind.Domain.Common.Result<T>                                      100%
+  Northwind.Domain.Entities.Customer                                    80.9%
+  Northwind.Domain.Entities.Employee                                    68.4%
+  Northwind.Domain.Entities.Order                                       89.6%
+  Northwind.Domain.Entities.OrderLine                                   79.1%
+  Northwind.Domain.Entities.Product                                     68.7%
+  Northwind.Domain.Entities.Shipper                                     63.6%
+  Northwind.Domain.Entities.ShippingGeocode                             83.7%
+  Northwind.Domain.ValueObjects.Address                                 97.1%
+  Northwind.Domain.ValueObjects.GeoCoordinates                          95.2%
+  Northwind.Domain.ValueObjects.Money                                   96.8%

@@ -9,7 +9,7 @@ using Northwind.Domain.ValueObjects;
 
 namespace Northwind.Application.Orders;
 
-public sealed class OrderService
+public sealed class OrderService : IOrderService
 {
     private readonly IOrderRepository _orders;
     private readonly IProductRepository _products;

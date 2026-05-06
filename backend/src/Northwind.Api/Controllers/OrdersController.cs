@@ -15,9 +15,9 @@ namespace Northwind.Api.Controllers;
 [Produces("application/json")]
 public sealed class OrdersController : ControllerBase
 {
-    private readonly OrderService _orderService;
+    private readonly IOrderService _orderService;
 
-    public OrdersController(OrderService orderService)
+    public OrdersController(IOrderService orderService)
     {
         _orderService = orderService;
     }
