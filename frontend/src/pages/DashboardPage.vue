@@ -161,6 +161,37 @@
         </q-card>
       </div>
     </div>
+
+    <div class="row q-col-gutter-md q-mt-md">
+      <div class="col-12 col-md-6">
+        <q-card bordered class="full-height">
+          <q-card-section>
+            <div class="text-subtitle1 text-weight-bold">Top 5 Customers by Revenue</div>
+            <div class="text-caption text-grey-7">{{ selectedYear ? `Year ${selectedYear}` : 'All years' }}</div>
+          </q-card-section>
+          <q-separator />
+          <q-card-section v-if="loadingCustomers">
+            <q-skeleton v-for="i in 5" :key="i" type="text" class="q-mb-sm" />
+          </q-card-section>
+          <q-list v-else separator>
+            <q-item v-for="(c, i) in topCustomers" :key="c.customerId">
+              <q-item-section avatar>
+                <q-avatar color="primary" text-color="white" size="32px">{{ i + 1 }}</q-avatar>
+              </q-item-section>
+              <q-item-section>
+                <q-item-label class="text-weight-medium">{{ c.companyName }}</q-item-label>
+                <q-item-label caption>{{ c.orderCount }} orders</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <span class="text-weight-bold text-primary">
+                  ${{ c.totalRevenue.toLocaleString('en-US', { maximumFractionDigits: 0 }) }}
+                </span>
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-card>
+      </div>
+    </div>
   </q-page>
 </template>
 
@@ -176,6 +207,8 @@ const selectedYear = ref(null)
 const availableYears = ref([])
 const ordersRaw = ref([])
 const regionsData = ref([])
+const topCustomers = ref([])
+const loadingCustomers = ref(false)
 
 // ---- Formatters ----
 const currencyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
@@ -259,6 +292,18 @@ async function fetchYears () {
   }
 }
 
+async function fetchTopCustomers (year) {
+  loadingCustomers.value = true
+  try {
+    const params = year ? { year, limit: 5 } : { limit: 5 }
+    const { data } = await api.get('/analytics/top-customers', { params })
+    topCustomers.value = data
+  } catch (err) {
+  } finally {
+    loadingCustomers.value = false
+  }
+}
+
 async function fetchDashboardData (year) {
   loading.value = true
   try {
@@ -266,6 +311,7 @@ async function fetchDashboardData (year) {
     const [ordersRes, regionsRes] = await Promise.all([
       api.get('/analytics/orders-over-time', { params }),
       api.get('/analytics/shipments-by-region', { params }),
+      fetchTopCustomers(year),
     ])
     ordersRaw.value = ordersRes.data
     regionsData.value = regionsRes.data

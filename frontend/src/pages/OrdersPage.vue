@@ -91,6 +91,32 @@
               </template>
             </q-select>
 
+            <q-input
+              v-model="filters.fromDate"
+              type="date"
+              label="From"
+              dense
+              outlined
+              clearable
+              style="min-width:130px"
+              class="col-6 col-md-auto elegant-input"
+              hide-bottom-space
+              @update:model-value="resetAndLoad"
+            />
+
+            <q-input
+              v-model="filters.toDate"
+              type="date"
+              label="To"
+              dense
+              outlined
+              clearable
+              style="min-width:130px"
+              class="col-6 col-md-auto elegant-input"
+              hide-bottom-space
+              @update:model-value="resetAndLoad"
+            />
+
             <!-- Year: Ancho fijo exacto -->
             <q-select
               v-model="filters.year"
@@ -280,15 +306,18 @@ const filteredCustomers = ref([])
 const yearOptions = ref([])
 
 const statusOptions = [
+  { label: 'All', value: null },
+  { label: 'Pending', value: false },
   { label: 'Shipped', value: true },
-  { label: 'Pending', value: false }
 ]
 
 const filters = reactive({
   customerId: null,
   region: null,
-  status: null,
   year: null,
+  fromDate: null,
+  toDate: null,
+  status: null,
 })
 
 const pagination = ref({
@@ -323,7 +352,9 @@ async function loadOrders () {
 
     if (filters.customerId) params.customerId = filters.customerId
     if (filters.region) params.region = filters.region
-    if (filters.status !== null) params.isShipped = filters.status
+    if (filters.fromDate) params.fromDate = filters.fromDate
+    if (filters.toDate) params.toDate = filters.toDate
+    if (filters.status !== null && filters.status !== undefined) params.isShipped = filters.status
 
     const { data } = await api.get('/orders', { params })
 
