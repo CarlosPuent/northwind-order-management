@@ -24,8 +24,7 @@
       <q-card flat class="mac-card q-mb-lg">
         <q-card-section class="q-pa-lg">
           <div class="row q-col-gutter-md items-center">
-            
-            <!-- Customer: ancho controlado por class (col-md-3 col-lg-4) para que se vean los demás filtros/botones -->
+
             <q-select
               v-model="filters.customerId"
               :options="filteredCustomers"
@@ -56,7 +55,6 @@
               </template>
             </q-select>
 
-            <!-- Search: ancho controlado por class (col-md-3 col-lg-4) para que se vean los demás filtros/botones -->
             <q-input
               v-model="filters.region"
               outlined
@@ -72,7 +70,6 @@
               </template>
             </q-input>
 
-            <!-- Status: Ancho fijo exacto -->
             <q-select
               v-model="filters.status"
               :options="statusOptions"
@@ -89,7 +86,6 @@
               <template v-slot:selected-item="scope">
                 <span class="text-grey-9 text-weight-medium">{{ scope.opt.label }}</span>
               </template>
-            </q-select>
 
             <q-input
               v-model="filters.fromDate"
@@ -117,7 +113,6 @@
               @update:model-value="resetAndLoad"
             />
 
-            <!-- Year: Ancho fijo exacto -->
             <q-select
               v-model="filters.year"
               :options="yearOptions"
@@ -130,7 +125,6 @@
               @update:model-value="resetAndLoad"
             />
 
-            <!-- Export buttons: Toma el espacio exacto de los botones -->
             <div class="col-12 col-md-auto row q-gutter-sm justify-end items-center">
               <q-btn-group flat class="elegant-btn-group">
                 <q-btn flat no-caps text-color="green-8" class="export-btn" @click="exportToExcel" :disable="orders.length === 0">

@@ -41,9 +41,6 @@ public sealed class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetInitialProducts(CancellationToken cancellationToken)
     {
-        // Reutilizamos tu método de búsqueda pasándole un string vacío para engañarlo
-        // y le pedimos un límite razonable (ej. 50) para no saturar la página.
-        // Nota: Asegúrate de que tu IProductRepository soporte strings vacíos en la consulta DB.
         var products = await _products.SearchByNameAsync("", 50, cancellationToken);
 
         var result = products.Select(p => new
