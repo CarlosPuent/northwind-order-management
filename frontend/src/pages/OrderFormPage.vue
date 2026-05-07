@@ -499,8 +499,6 @@ function lineTotal (line) {
 
 function effectiveMaxQty(line) {
   if (line.unitsInStock == null) return null
-  // En edit mode: max = stock actual + lo que esta línea ya tenía reservado
-  // En create mode: originalQuantity es 0, así que max = stock actual
   return line.unitsInStock + (line.originalQuantity ?? 0)
 }
 
@@ -520,7 +518,7 @@ function addLine () {
     unitPrice: 0,
     discount: 0,
     unitsInStock: null,
-    originalQuantity: 0, // Iniciar explícitamente en nueva línea
+    originalQuantity: 0, 
   })
 }
 
@@ -537,7 +535,7 @@ function onProductSelected (index) {
     line.unitPrice = product.unitPrice
     line.productName = product.productName
     line.unitsInStock = product.unitsInStock ?? null
-    line.originalQuantity = 0 // AGREGAR: producto nuevo, nada reservado
+    line.originalQuantity = 0 
   }
 }
 
@@ -753,7 +751,7 @@ async function loadOrder () {
         unitPrice: l.unitPrice,
         discount: l.discount,
         unitsInStock: ref?.unitsInStock ?? null,
-        originalQuantity: l.quantity,  // AGREGAR: stock ya reservado por esta línea
+        originalQuantity: l.quantity,  
       }
     })
   } catch (err) {
