@@ -1,6 +1,7 @@
 <template>
   <q-page class="bg-grey-1" padding>
     <div class="page-container q-mx-auto" style="max-width: 1300px;">
+      <!-- Header -->
       <div class="row items-center q-mb-xl q-mt-md">
         <div class="col">
           <div class="text-h4 text-weight-bolder text-grey-9 tracking-tight">Orders</div>
@@ -19,126 +20,144 @@
         </div>
       </div>
 
+      <!-- Filters Toolbar -->
       <q-card flat class="mac-card q-mb-lg">
         <q-card-section class="q-pa-md">
           <div class="row items-center justify-between q-col-gutter-md">
             
-            <div class="row items-center q-gutter-sm col">
-              <q-select
-                v-model="filters.customerId"
-                :options="filteredCustomers"
-                option-value="id"
-                option-label="companyName"
-                emit-value
-                map-options
-                clearable
-                outlined
-                dense
-                label="Customer"
-                class="elegant-input"
-                style="flex-grow: 1; min-width: 220px; max-width: 400px;"
-                use-input
-                input-debounce="200"
-                hide-bottom-space
-                @filter="filterCustomerOptions"
-                @update:model-value="resetAndLoad"
-              >
-                <template v-slot:selected-item="scope">
-                  <span class="text-grey-9 text-weight-medium text-truncate">{{ scope.opt.companyName }}</span>
-                </template>
-                <template v-slot:option="scope">
-                  <q-item v-bind="scope.itemProps" dense class="q-py-sm">
-                    <q-item-section>
-                      <q-item-label class="text-weight-medium text-grey-9">{{ scope.opt.companyName }}</q-item-label>
-                      <q-item-label caption class="text-grey-6">{{ scope.opt.city }}, {{ scope.opt.country }}</q-item-label>
-                    </q-item-section>
-                  </q-item>
-                </template>
-              </q-select>
+            <!-- Left Side: Filter Inputs (Using stable Quasar Grid) -->
+            <div class="col-12 col-lg">
+              <div class="row q-col-gutter-sm items-center">
+                <!-- Customer -->
+                <div class="col-12 col-sm-4 col-md-3">
+                  <q-select
+                    v-model="filters.customerId"
+                    :options="filteredCustomers"
+                    option-value="id"
+                    option-label="companyName"
+                    emit-value
+                    map-options
+                    clearable
+                    outlined
+                    dense
+                    label="Customer"
+                    class="elegant-input"
+                    use-input
+                    input-debounce="200"
+                    hide-bottom-space
+                    @filter="filterCustomerOptions"
+                    @update:model-value="resetAndLoad"
+                  >
+                    <template v-slot:selected-item="scope">
+                      <span class="text-grey-9 text-weight-medium text-truncate">{{ scope.opt.companyName }}</span>
+                    </template>
+                    <template v-slot:option="scope">
+                      <q-item v-bind="scope.itemProps" dense class="q-py-sm">
+                        <q-item-section>
+                          <q-item-label class="text-weight-medium text-grey-9">{{ scope.opt.companyName }}</q-item-label>
+                          <q-item-label caption class="text-grey-6">{{ scope.opt.city }}, {{ scope.opt.country }}</q-item-label>
+                        </q-item-section>
+                      </q-item>
+                    </template>
+                  </q-select>
+                </div>
 
-              <q-select
-                v-model="filters.status"
-                :options="statusOptions"
-                emit-value
-                map-options
-                clearable
-                outlined
-                dense
-                label="Status"
-                class="elegant-input"
-                style="width: 140px;"
-                hide-bottom-space
-                @update:model-value="resetAndLoad"
-              >
-                <template v-slot:selected-item="scope">
-                  <span class="text-grey-9 text-weight-medium">{{ scope.opt.label }}</span>
-                </template>
-              </q-select>
+                <!-- Status -->
+                <div class="col-6 col-sm-2 col-md-2">
+                  <q-select
+                    v-model="filters.status"
+                    :options="statusOptions"
+                    emit-value
+                    map-options
+                    clearable
+                    outlined
+                    dense
+                    label="Status"
+                    class="elegant-input"
+                    hide-bottom-space
+                    @update:model-value="resetAndLoad"
+                  >
+                    <template v-slot:selected-item="scope">
+                      <span class="text-grey-9 text-weight-medium">{{ scope.opt.label }}</span>
+                    </template>
+                  </q-select>
+                </div>
 
-              <q-input
-                v-model="filters.fromDate"
-                type="date"
-                label="From"
-                outlined
-                dense
-                clearable
-                class="elegant-input"
-                style="width: 160px;"
-                hide-bottom-space
-                @update:model-value="resetAndLoad"
-              />
+                <!-- From Date -->
+                <div class="col-6 col-sm-2 col-md-2">
+                  <q-input
+                    v-model="filters.fromDate"
+                    type="date"
+                    label="From"
+                    outlined
+                    dense
+                    clearable
+                    class="elegant-input"
+                    hide-bottom-space
+                    @update:model-value="resetAndLoad"
+                  />
+                </div>
 
-              <q-input
-                v-model="filters.toDate"
-                type="date"
-                label="To"
-                outlined
-                dense
-                clearable
-                class="elegant-input"
-                style="width: 160px;"
-                hide-bottom-space
-                @update:model-value="resetAndLoad"
-              />
+                <!-- To Date -->
+                <div class="col-6 col-sm-2 col-md-2">
+                  <q-input
+                    v-model="filters.toDate"
+                    type="date"
+                    label="To"
+                    outlined
+                    dense
+                    clearable
+                    class="elegant-input"
+                    hide-bottom-space
+                    @update:model-value="resetAndLoad"
+                  />
+                </div>
 
-              <q-select
-                v-model="filters.year"
-                :options="yearOptions"
-                clearable
-                outlined
-                dense
-                label="Year"
-                class="elegant-input"
-                style="width: 110px;"
-                hide-bottom-space
-                @update:model-value="resetAndLoad"
-              />
+                <!-- Year -->
+                <div class="col-6 col-sm-2 col-md-2">
+                  <q-select
+                    v-model="filters.year"
+                    :options="yearOptions"
+                    clearable
+                    outlined
+                    dense
+                    label="Year"
+                    class="elegant-input"
+                    hide-bottom-space
+                    @update:model-value="resetAndLoad"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div class="row items-center q-gutter-sm">
-              <q-btn-group flat class="elegant-btn-group">
-                <q-btn flat no-caps text-color="green-8" class="export-btn" @click="exportToExcel" :disable="orders.length === 0">
-                  <q-icon name="table_chart" size="18px" class="q-mr-sm" />
-                  <span class="text-weight-bold">Excel</span>
-                  <q-tooltip class="bg-grey-9">Export to Excel</q-tooltip>
-                </q-btn>
-                <q-separator vertical color="grey-3" />
-                <q-btn flat no-caps text-color="red-7" class="export-btn" @click="exportToPdf" :disable="orders.length === 0">
-                  <q-icon name="picture_as_pdf" size="18px" class="q-mr-sm" />
-                  <span class="text-weight-bold">PDF</span>
-                  <q-tooltip class="bg-grey-9">Export to PDF</q-tooltip>
-                </q-btn>
-              </q-btn-group>
+            <!-- Right Side: Actions -->
+            <div class="col-12 col-lg-auto">
+              <div class="row items-center justify-end q-gutter-sm">
+                <q-btn-group flat class="elegant-btn-group">
+                  <q-btn flat no-caps text-color="green-8" class="export-btn" @click="exportToExcel" :disable="orders.length === 0">
+                    <q-icon name="table_chart" size="18px" class="q-mr-sm" />
+                    <span class="text-weight-bold">Excel</span>
+                    <q-tooltip class="bg-grey-9">Export to Excel</q-tooltip>
+                  </q-btn>
+                  <q-separator vertical color="grey-3" />
+                  <q-btn flat no-caps text-color="red-7" class="export-btn" @click="exportToPdf" :disable="orders.length === 0">
+                    <q-icon name="picture_as_pdf" size="18px" class="q-mr-sm" />
+                    <span class="text-weight-bold">PDF</span>
+                    <q-tooltip class="bg-grey-9">Export to PDF</q-tooltip>
+                  </q-btn>
+                </q-btn-group>
 
-              <q-btn flat round color="grey-7" icon="refresh" class="refresh-btn" @click="loadOrders">
-                <q-tooltip class="bg-grey-9">Refresh Data</q-tooltip>
-              </q-btn>
+                <q-btn flat round color="grey-7" icon="refresh" class="refresh-btn" @click="loadOrders">
+                  <q-tooltip class="bg-grey-9">Refresh Data</q-tooltip>
+                </q-btn>
+              </div>
             </div>
 
           </div>
         </q-card-section>
       </q-card>
 
+      <!-- Data Table -->
       <q-table
         :rows="orders"
         :columns="columns"
