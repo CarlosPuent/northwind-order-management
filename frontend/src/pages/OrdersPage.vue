@@ -21,9 +21,9 @@
 
       <q-card flat class="mac-card q-mb-lg">
         <q-card-section class="q-pa-md">
-          <div class="row items-center justify-between" style="gap: 16px;">
+          <div class="row items-center justify-between q-col-gutter-md">
             
-            <div class="row items-center q-gutter-sm col-grow">
+            <div class="row items-center q-gutter-sm col">
               <q-select
                 v-model="filters.customerId"
                 :options="filteredCustomers"
