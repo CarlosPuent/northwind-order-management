@@ -33,6 +33,11 @@ public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderC
         RuleFor(x => x.Freight)
             .GreaterThanOrEqualTo(0).WithMessage("Freight cannot be negative.");
 
+        RuleFor(x => x.RequiredDate)
+            .GreaterThanOrEqualTo(x => x.OrderDate)
+            .When(x => x.RequiredDate.HasValue)
+            .WithMessage("Required date must be on or after the order date.");
+
         RuleFor(x => x.Lines)
             .NotEmpty().WithMessage("Order must have at least one line item.");
 

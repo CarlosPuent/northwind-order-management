@@ -13,5 +13,6 @@ public sealed record UpdateOrderCommand(
     string ShipCountry,
     decimal Freight,
     List<OrderLineCommand> Lines,
+    DateTime? RequiredDate = null,
     GeocodeCommandData? Geocode = null
 );

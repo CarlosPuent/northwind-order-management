@@ -127,6 +127,18 @@
                 />
 
                 <q-input
+                  v-model="form.requiredDate"
+                  outlined
+                  type="date"
+                  label="Required Date"
+                  class="col-12 col-sm-4 elegant-input"
+                  :min="form.orderDate || undefined"
+                  clearable
+                  hide-bottom-space
+                  tabindex="5"
+                />
+
+                <q-input
                   v-model.number="form.freight"
                   outlined
                   type="number"
@@ -135,7 +147,7 @@
                   min="0"
                   step="0.01"
                   hide-bottom-space
-                  tabindex="5"
+                  tabindex="6"
                 />
               </div>
             </q-card-section>
@@ -436,6 +448,7 @@ const form = reactive({
   employeeId: null,
   shipperId: null,
   orderDate: new Date().toISOString().split('T')[0],
+  requiredDate: null,
   freight: 0,
   shipName: '',
   shipStreet: '',
@@ -625,6 +638,7 @@ async function submitOrder () {
       customerId: form.customerId,
       employeeId: form.employeeId,
       orderDate: form.orderDate,
+      requiredDate: form.requiredDate || null,
       shipName: form.shipName,
       shipStreet: form.shipStreet,
       shipCity: form.shipCity,
@@ -692,10 +706,23 @@ async function loadOrder () {
   loadingOrder.value = true
   try {
     const { data } = await api.get(`/orders/${route.params.id}`)
+
+    if (data.isShipped) {
+      $q.notify({
+        type: 'warning',
+        message: `Order #${data.id} has been shipped and cannot be edited.`,
+        position: 'top-right',
+        timeout: 5000,
+      })
+      router.replace({ name: 'order-detail', params: { id: data.id } })
+      return
+    }
+
     form.customerId = data.customerId
     form.employeeId = data.employeeId
     form.shipperId = data.shipperId || null
     form.orderDate = data.orderDate?.split('T')[0]
+    form.requiredDate = data.requiredDate ? data.requiredDate.split('T')[0] : null
     form.freight = data.freight
     form.shipName = data.shipName
     form.shipStreet = data.shipStreet

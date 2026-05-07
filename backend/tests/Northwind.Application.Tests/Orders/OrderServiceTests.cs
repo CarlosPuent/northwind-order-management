@@ -769,6 +769,107 @@ public class OrderServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be("Product.InsufficientStock");
     }
+
+    // ==================================================================
+    // Business-rule workflow protections
+    // ==================================================================
+
+    [Fact]
+    public async Task ShipAsync_WithShippedDateBeforeOrderDate_ShouldReturnFailure()
+    {
+        var order = CreateSampleOrder(); // OrderDate = DateTime.UtcNow
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var cmd = new ShipOrderCommand(
+            OrderId: 1,
+            ShipperId: 2,
+            ShippedDate: order.OrderDate.AddDays(-1));
+
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.ShippedDateBeforeOrderDate");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ShipAsync_WithShippedDateEqualToOrderDate_ShouldSucceed()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new ShipOrderCommand(
+            OrderId: 1,
+            ShipperId: 2,
+            ShippedDate: order.OrderDate);
+
+        var result = await _sut.ShipAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithRequiredDateBeforeOrderDate_ShouldReturnFailure()
+    {
+        var orderDate = DateTime.UtcNow;
+        var cmd = ValidCreateCommand() with
+        {
+            OrderDate = orderDate,
+            RequiredDate = orderDate.AddDays(-1)
+        };
+
+        var result = await _sut.CreateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.InvalidRequiredDate");
+        _orderRepo.Verify(r => r.Add(It.IsAny<Order>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithValidRequiredDate_ShouldSucceed()
+    {
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var orderDate = DateTime.UtcNow;
+        var cmd = ValidCreateCommand() with
+        {
+            OrderDate = orderDate,
+            RequiredDate = orderDate.AddDays(7)
+        };
+
+        var result = await _sut.CreateAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithRequiredDateBeforeOrderDate_ShouldReturnFailure()
+    {
+        var order = CreateSampleOrder(); // OrderDate = DateTime.UtcNow
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
+            ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
+            Freight: 20m,
+            Lines: new List<OrderLineCommand> { new(11, 2, 0f) },
+            RequiredDate: order.OrderDate.AddDays(-1)
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.InvalidRequiredDate");
+    }
 }
 
 

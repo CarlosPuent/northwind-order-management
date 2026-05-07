@@ -198,20 +198,20 @@
               </q-btn>
               
               <q-btn flat round dense icon="edit" class="action-btn btn-edit"
-                :to="{ name: 'order-edit', params: { id: props.row.id } }"
+                :to="props.row.isShipped ? undefined : { name: 'order-edit', params: { id: props.row.id } }"
                 :disable="props.row.isShipped">
-                <q-tooltip class="bg-grey-9">Edit Order</q-tooltip>
+                <q-tooltip class="bg-grey-9">{{ props.row.isShipped ? 'Shipped — cannot be edited' : 'Edit Order' }}</q-tooltip>
               </q-btn>
-              
+
               <q-btn flat round dense icon="receipt_long" class="action-btn btn-invoice"
                 @click="downloadInvoice(props.row.id)">
                 <q-tooltip class="bg-grey-9">Download Invoice</q-tooltip>
               </q-btn>
-              
+
               <q-btn flat round dense icon="delete_outline" class="action-btn btn-delete"
                 :disable="props.row.isShipped"
                 @click="confirmDelete(props.row)">
-                <q-tooltip class="bg-grey-9">Delete</q-tooltip>
+                <q-tooltip class="bg-grey-9">{{ props.row.isShipped ? 'Shipped — cannot be deleted' : 'Delete' }}</q-tooltip>
               </q-btn>
             </div>
           </q-td>

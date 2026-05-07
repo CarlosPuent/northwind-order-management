@@ -92,6 +92,12 @@ public sealed class OrderService : IOrderService
 
         var order = orderResult.Value;
 
+        if (cmd.RequiredDate.HasValue)
+        {
+            var requiredDateResult = order.SetRequiredDate(cmd.RequiredDate.Value);
+            if (requiredDateResult.IsFailure) return requiredDateResult.Error;
+        }
+
         if (cmd.Lines == null || cmd.Lines.Count == 0)
             return Error.Validation("Order.NoLines", "Order must have at least one line.");
 
@@ -149,6 +155,12 @@ public sealed class OrderService : IOrderService
             if (assignResult.IsFailure) return assignResult.Error;
         }
 
+        if (cmd.RequiredDate.HasValue)
+        {
+            var requiredDateResult = order.SetRequiredDate(cmd.RequiredDate.Value);
+            if (requiredDateResult.IsFailure) return requiredDateResult.Error;
+        }
+
         var existingLines = order.Lines.Select(l => (l.ProductId, l.Quantity)).ToList();
         foreach (var (pid, qty) in existingLines)
         {
@@ -198,6 +210,10 @@ public sealed class OrderService : IOrderService
 
         if (order.IsShipped)
             return Error.Conflict("Order.AlreadyShipped", "Order has already been shipped.");
+
+        if (cmd.ShippedDate.HasValue && cmd.ShippedDate.Value < order.OrderDate)
+            return Error.Validation("Order.ShippedDateBeforeOrderDate",
+                "Shipped date cannot be earlier than the order date.");
 
         var assignResult = order.AssignShipper(cmd.ShipperId);
         if (assignResult.IsFailure) return assignResult.Error;

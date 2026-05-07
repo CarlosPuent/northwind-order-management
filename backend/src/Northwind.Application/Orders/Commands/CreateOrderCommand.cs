@@ -29,6 +29,7 @@ public sealed record CreateOrderCommand(
     string ShipCountry,
     decimal Freight,
     List<OrderLineCommand> Lines,
+    DateTime? RequiredDate = null,
     // Optional: present when the user validated the address before submitting
     GeocodeCommandData? Geocode = null
 );

@@ -187,6 +187,18 @@ public sealed class Order : Entity<int>
         return Result.Success();
     }
 
+    // ----- Required date -----
+
+    public Result SetRequiredDate(DateTime requiredDate)
+    {
+        if (requiredDate < OrderDate)
+            return Error.Validation("Order.InvalidRequiredDate",
+                "Required date must be on or after the order date.");
+
+        RequiredDate = requiredDate;
+        return Result.Success();
+    }
+
     // ----- Shipper / address / shipping date -----
 
     public Result AssignShipper(int shipperId)

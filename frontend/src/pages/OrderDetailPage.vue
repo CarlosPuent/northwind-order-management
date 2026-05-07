@@ -84,6 +84,10 @@
                 <div class="col-5 text-grey-7">Shipper:</div>
                 <div class="col">{{ shipperName }}</div>
               </div>
+              <div class="row q-mb-xs" v-if="order.requiredDate">
+                <div class="col-5 text-grey-7">Required by:</div>
+                <div class="col">{{ formatDate(order.requiredDate) }}</div>
+              </div>
               <div class="row q-mb-xs" v-if="order.shippedDate">
                 <div class="col-5 text-grey-7">Shipped:</div>
                 <div class="col">{{ formatDate(order.shippedDate) }}</div>

@@ -139,4 +139,52 @@ public class CreateOrderCommandValidatorTests
         var result = _validator.Validate(cmd);
         result.IsValid.Should().BeFalse();
     }
+
+    [Fact]
+    public void RequiredDateBeforeOrderDate_ShouldFail()
+    {
+        var orderDate = DateTime.UtcNow;
+        var cmd = ValidCommand() with
+        {
+            OrderDate = orderDate,
+            RequiredDate = orderDate.AddDays(-1)
+        };
+        var result = _validator.Validate(cmd);
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "RequiredDate");
+    }
+
+    [Fact]
+    public void RequiredDateOnOrderDate_ShouldPass()
+    {
+        var orderDate = DateTime.UtcNow;
+        var cmd = ValidCommand() with
+        {
+            OrderDate = orderDate,
+            RequiredDate = orderDate
+        };
+        var result = _validator.Validate(cmd);
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RequiredDateAfterOrderDate_ShouldPass()
+    {
+        var orderDate = DateTime.UtcNow;
+        var cmd = ValidCommand() with
+        {
+            OrderDate = orderDate,
+            RequiredDate = orderDate.AddDays(7)
+        };
+        var result = _validator.Validate(cmd);
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void NullRequiredDate_ShouldPass()
+    {
+        var cmd = ValidCommand() with { RequiredDate = null };
+        var result = _validator.Validate(cmd);
+        result.IsValid.Should().BeTrue();
+    }
 }
