@@ -19,15 +19,27 @@ internal sealed class ShippingGeocodeRepository : IShippingGeocodeRepository
 
     public void Upsert(ShippingGeocode geocode)
     {
-        // Remove any existing geocode for this order, then add the new one.
-        // This maintains the one-geocode-per-order invariant at the persistence level.
+        // True upsert:
+        // - If a row already exists for this OrderId, update it in-place.
+        // - Otherwise, insert a new row.
+        // This prevents unique index violations on OrderId during order updates.
         var existing = _db.ShippingGeocodes
             .Local
-            .FirstOrDefault(g => g.OrderId == geocode.OrderId);
+            .FirstOrDefault(g => g.OrderId == geocode.OrderId)
+            ?? _db.ShippingGeocodes.FirstOrDefault(g => g.OrderId == geocode.OrderId);
 
-        if (existing != null)
-            _db.ShippingGeocodes.Remove(existing);
+        if (existing is null)
+        {
+            _db.ShippingGeocodes.Add(geocode);
+            return;
+        }
 
-        _db.ShippingGeocodes.Add(geocode);
+        // Keep the existing Id (row identity), just replace the values.
+        existing.Replace(
+            geocode.StandardizedAddress,
+            geocode.Coordinates,
+            geocode.PlaceType,
+            geocode.RawResponse,
+            DateTime.UtcNow);
     }
 }

@@ -75,6 +75,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+var runningInContainer = string.Equals(
+    Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER"),
+    "true",
+    StringComparison.OrdinalIgnoreCase);
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -84,8 +89,13 @@ app.UseSwaggerUI(c =>
     c.DisplayRequestDuration();     // Show request timing
 });
 
+app.UseRouting();
 app.UseCors();
-app.UseHttpsRedirection();
+
+// In container scenarios the API typically runs HTTP-only; HTTPS redirection can break PUT/DELETE.
+if (!runningInContainer)
+    app.UseHttpsRedirection();
+
 app.UseAuthorization();
 app.MapControllers();
 

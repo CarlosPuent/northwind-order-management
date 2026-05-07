@@ -198,6 +198,45 @@ public sealed class Order : Entity<int>
 
     // ----- Shipper / address / shipping date -----
 
+    public Result UpdateFreight(Money newFreight)
+    {
+        if (!IsEditable)
+            return Error.Conflict(
+                "Order.NotEditable",
+                "Cannot change freight on an order that has already shipped.");
+
+        Freight = newFreight;
+        return Result.Success();
+    }
+
+    public Result UpdateCustomer(string customerId)
+    {
+        if (!IsEditable)
+            return Error.Conflict(
+                "Order.NotEditable",
+                "Cannot change the customer on an order that has already shipped.");
+
+        if (string.IsNullOrWhiteSpace(customerId))
+            return Error.Validation("Order.MissingCustomer", "Customer is required.");
+
+        CustomerId = customerId;
+        return Result.Success();
+    }
+
+    public Result UpdateEmployee(int employeeId)
+    {
+        if (!IsEditable)
+            return Error.Conflict(
+                "Order.NotEditable",
+                "Cannot change the employee on an order that has already shipped.");
+
+        if (employeeId <= 0)
+            return Error.Validation("Order.MissingEmployee", "Employee is required.");
+
+        EmployeeId = employeeId;
+        return Result.Success();
+    }
+
     public Result AssignShipper(int shipperId)
     {
         if (!IsEditable)

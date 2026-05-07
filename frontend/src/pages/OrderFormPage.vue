@@ -316,10 +316,10 @@
                     v-model.number="line.quantity"
                     outlined dense type="number" label="Qty"
                     style="width: 80px" min="1"
-                    :max="line.unitsInStock ?? undefined"
+                    :max="effectiveMaxQty(line) ?? undefined"
                     :rules="[
                       v => v >= 1 || 'Min 1',
-                      v => line.unitsInStock == null || v <= line.unitsInStock || `Max ${line.unitsInStock}`
+                      v => effectiveMaxQty(line) == null || v <= effectiveMaxQty(line) || `Max ${effectiveMaxQty(line)}`
                     ]"
                     hide-bottom-space
                     class="elegant-input text-center-input"
@@ -327,8 +327,8 @@
 
                   <div v-if="line.productId" style="width: 56px" class="text-center">
                     <div class="text-caption text-weight-medium"
-                      :class="line.unitsInStock != null && line.quantity > line.unitsInStock ? 'text-negative' : 'text-grey-5'">
-                      {{ line.unitsInStock != null ? line.unitsInStock + ' avail.' : '' }}
+                      :class="effectiveMaxQty(line) != null && line.quantity > effectiveMaxQty(line) ? 'text-negative' : 'text-grey-5'">
+                      {{ effectiveMaxQty(line) != null ? effectiveMaxQty(line) + ' avail.' : '' }}
                     </div>
                   </div>
                   <div v-else style="width: 56px"></div>
@@ -497,6 +497,13 @@ function lineTotal (line) {
   return gross * (1 - (line.discount || 0))
 }
 
+function effectiveMaxQty(line) {
+  if (line.unitsInStock == null) return null
+  // En edit mode: max = stock actual + lo que esta línea ya tenía reservado
+  // En create mode: originalQuantity es 0, así que max = stock actual
+  return line.unitsInStock + (line.originalQuantity ?? 0)
+}
+
 const subtotal = computed(() =>
   form.lines.reduce((sum, line) => sum + lineTotal(line), 0)
 )
@@ -513,6 +520,7 @@ function addLine () {
     unitPrice: 0,
     discount: 0,
     unitsInStock: null,
+    originalQuantity: 0, // Iniciar explícitamente en nueva línea
   })
 }
 
@@ -529,6 +537,7 @@ function onProductSelected (index) {
     line.unitPrice = product.unitPrice
     line.productName = product.productName
     line.unitsInStock = product.unitsInStock ?? null
+    line.originalQuantity = 0 // AGREGAR: producto nuevo, nada reservado
   }
 }
 
@@ -623,9 +632,10 @@ async function submitOrder () {
     return
   }
 
-  const stockViolations = form.lines.filter(
-    l => l.unitsInStock != null && l.quantity > l.unitsInStock
-  )
+  const stockViolations = form.lines.filter(l => {
+    const max = effectiveMaxQty(l)
+    return max != null && l.quantity > max
+  })
   if (stockViolations.length) {
     $q.notify({
       type: 'warning',
@@ -743,6 +753,7 @@ async function loadOrder () {
         unitPrice: l.unitPrice,
         discount: l.discount,
         unitsInStock: ref?.unitsInStock ?? null,
+        originalQuantity: l.quantity,  // AGREGAR: stock ya reservado por esta línea
       }
     })
   } catch (err) {

@@ -109,4 +109,28 @@ public sealed class ShippingGeocode : Entity<Guid>
         PlaceType.Equals("premise", StringComparison.OrdinalIgnoreCase) ||
         PlaceType.Equals("subpremise", StringComparison.OrdinalIgnoreCase) ||
         PlaceType.Equals("establishment", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Replaces the stored geocode details for this order while keeping the same row (Id).
+    /// This avoids delete/insert churn and prevents unique index violations on OrderId.
+    /// </summary>
+    public Result Replace(
+        Address standardizedAddress,
+        GeoCoordinates coordinates,
+        string placeType,
+        string rawResponse,
+        DateTime? validatedAtUtc = null)
+    {
+        if (string.IsNullOrWhiteSpace(placeType))
+            return Error.Validation(
+                "ShippingGeocode.MissingPlaceType",
+                "Place type is required.");
+
+        StandardizedAddress = standardizedAddress;
+        Coordinates = coordinates;
+        PlaceType = placeType;
+        RawResponse = rawResponse ?? string.Empty;
+        ValidatedAt = validatedAtUtc ?? DateTime.UtcNow;
+        return Result.Success();
+    }
 }

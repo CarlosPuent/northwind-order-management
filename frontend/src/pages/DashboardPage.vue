@@ -366,12 +366,16 @@
                     square
                     color="primary"
                     text-color="white"
-                    class="location-chip"
+                    class="location-chip cursor-pointer"
+                    clickable
+                    @click="$router.push({ name: 'order-detail', params: { id: loc.orderId } })"
                   >
                     <q-icon name="location_on" size="12px" class="q-mr-xs" />
                     <strong>#{{ loc.orderId }}</strong>
                     &nbsp;·&nbsp;{{ loc.city }}, {{ loc.country }}
-                    <q-tooltip>{{ loc.placeType }} · Validated {{ formatValidatedAt(loc.validatedAt) }}</q-tooltip>
+                    <q-tooltip class="bg-grey-9">
+                      View Order #{{ loc.orderId }} · {{ loc.placeType }} · Validated {{ formatValidatedAt(loc.validatedAt) }}
+                    </q-tooltip>
                   </q-chip>
                 </div>
               </q-card-section>

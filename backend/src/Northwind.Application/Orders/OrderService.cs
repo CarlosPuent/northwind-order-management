@@ -125,14 +125,15 @@ public sealed class OrderService : IOrderService
         if (cmd.Geocode is not null && order.Id > 0)
         {
             await SaveGeocodeAsync(order.Id, addressResult.Value, cmd.Geocode, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         return MapToDto(order);
     }
 
     public async Task<Result<OrderDto>> UpdateAsync(
-        UpdateOrderCommand cmd,
-        CancellationToken cancellationToken = default)
+    UpdateOrderCommand cmd,
+    CancellationToken cancellationToken = default)
     {
         var order = await _orders.GetByIdAsync(cmd.OrderId, cancellationToken);
         if (order is null)
@@ -144,6 +145,7 @@ public sealed class OrderService : IOrderService
         if (cmd.Lines != null && cmd.Lines.GroupBy(l => l.ProductId).Any(g => g.Count() > 1))
             return Error.Conflict("Order.DuplicateProduct", "Each product may appear only once per order.");
 
+        // ---- Address & ship name ----
         var addressResult = Address.Create(
             cmd.ShipStreet, cmd.ShipCity, cmd.ShipRegion,
             cmd.ShipPostalCode, cmd.ShipCountry);
@@ -154,6 +156,20 @@ public sealed class OrderService : IOrderService
 
         var updateName = order.UpdateShipName(cmd.ShipName);
         if (updateName.IsFailure) return updateName.Error;
+
+        // ---- FIX: Customer, Employee, Freight ----
+        var updateCustomer = order.UpdateCustomer(cmd.CustomerId);
+        if (updateCustomer.IsFailure) return updateCustomer.Error;
+
+        var updateEmployee = order.UpdateEmployee(cmd.EmployeeId);
+        if (updateEmployee.IsFailure) return updateEmployee.Error;
+
+        var freightResult = Money.Create(cmd.Freight, "USD");
+        if (freightResult.IsFailure) return freightResult.Error;
+
+        var updateFreight = order.UpdateFreight(freightResult.Value);
+        if (updateFreight.IsFailure) return updateFreight.Error;
+        // ---- end FIX ----
 
         if (cmd.ShipperId.HasValue)
         {
@@ -167,6 +183,7 @@ public sealed class OrderService : IOrderService
             if (requiredDateResult.IsFailure) return requiredDateResult.Error;
         }
 
+        // ---- Lines (restore stock → remove → re-add) ----
         var existingLines = order.Lines.Select(l => (l.ProductId, l.Quantity)).ToList();
         foreach (var (pid, qty) in existingLines)
         {
@@ -191,13 +208,10 @@ public sealed class OrderService : IOrderService
             if (lineResult.IsFailure) return lineResult.Error;
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        // FIX: Update geocode if address was re-validated.
         if (cmd.Geocode is not null)
-        {
             await SaveGeocodeAsync(order.Id, addressResult.Value, cmd.Geocode, cancellationToken);
-        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return MapToDto(order);
     }
@@ -275,9 +289,14 @@ public sealed class OrderService : IOrderService
         var coordsResult = GeoCoordinates.Create(geocodeData.Latitude, geocodeData.Longitude);
         if (coordsResult.IsFailure) return;
 
+        // IMPORTANT: Address is an EF Core owned type in multiple owners (Order + ShippingGeocode).
+        // Reusing the same Address instance can cause tracking warnings and double store changes.
+        // Clone it to ensure each owner has its own instance.
+        var standardizedAddress = address with { };
+
         var geocodeResult = ShippingGeocode.Create(
             orderId,
-            address,
+            standardizedAddress,
             coordsResult.Value,
             geocodeData.PlaceType,
             geocodeData.RawResponse ?? string.Empty);
@@ -285,7 +304,7 @@ public sealed class OrderService : IOrderService
         if (geocodeResult.IsFailure) return;
 
         _geocodes.Upsert(geocodeResult.Value);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await Task.CompletedTask;
     }
 
     private static OrderDto MapToDto(Order order, Dictionary<int, string>? productNames = null) => new()
