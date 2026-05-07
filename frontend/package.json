@@ -13,6 +13,7 @@
     "postinstall": "quasar prepare"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@quasar/extras": "^1.16.4",
     "@vueuse/core": "^14.2.1",
     "apexcharts": "^5.10.6",
