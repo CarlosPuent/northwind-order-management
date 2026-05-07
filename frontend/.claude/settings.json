@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Read(//c/Projects/Northwind.OrderManagement/backend/src/Northwind.Application/Orders/Commands/**)",
-      "Read(//c/Projects/Northwind.OrderManagement/backend/src/Northwind.Application/Orders/**)",
-      "Read(//c/Projects/Northwind.OrderManagement/backend/src/Northwind.Domain/Entities/**)"
-    ]
-  }
-}
