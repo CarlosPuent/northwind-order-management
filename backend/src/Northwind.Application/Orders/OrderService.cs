@@ -101,6 +101,9 @@ public sealed class OrderService : IOrderService
         if (cmd.Lines == null || cmd.Lines.Count == 0)
             return Error.Validation("Order.NoLines", "Order must have at least one line.");
 
+        if (cmd.Lines.GroupBy(l => l.ProductId).Any(g => g.Count() > 1))
+            return Error.Conflict("Order.DuplicateProduct", "Each product may appear only once per order.");
+
         foreach (var line in cmd.Lines)
         {
             var product = await _products.GetByIdTrackedAsync(line.ProductId, cancellationToken);
@@ -137,6 +140,9 @@ public sealed class OrderService : IOrderService
 
         if (!order.IsEditable)
             return Error.Conflict("Order.NotEditable", "Cannot modify an order that has been shipped.");
+
+        if (cmd.Lines != null && cmd.Lines.GroupBy(l => l.ProductId).Any(g => g.Count() > 1))
+            return Error.Conflict("Order.DuplicateProduct", "Each product may appear only once per order.");
 
         var addressResult = Address.Create(
             cmd.ShipStreet, cmd.ShipCity, cmd.ShipRegion,

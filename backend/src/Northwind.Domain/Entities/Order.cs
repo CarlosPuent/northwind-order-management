@@ -135,8 +135,9 @@ public sealed class Order : Entity<int>
     // ----- Line management -----
 
     /// <summary>
-    /// Adds a product line to the order. If the same product is already on the
-    /// order, the existing line's quantity is increased instead of creating a duplicate.
+    /// Adds a product line to the order. Each product may appear at most once;
+    /// Northwind's composite key (OrderId, ProductId) enforces this at the DB level
+    /// and we enforce it here first to return a clean business error.
     /// </summary>
     public Result AddLine(int productId, Money unitPrice, short quantity, float discount)
     {
@@ -158,14 +159,10 @@ public sealed class Order : Entity<int>
                 "OrderLine.CurrencyMismatch",
                 "All lines in an order must share the same currency.");
 
-        // Merge duplicates: Northwind's composite key (OrderId, ProductId) wouldn't
-        // allow two rows for the same product anyway. We make the merge explicit.
-        var existing = _lines.FirstOrDefault(l => l.ProductId == productId);
-        if (existing != null)
-        {
-            existing.UpdateQuantity((short)(existing.Quantity + quantity));
-            return Result.Success();
-        }
+        if (_lines.Any(l => l.ProductId == productId))
+            return Error.Conflict(
+                "Order.DuplicateProduct",
+                $"Product {productId} is already on this order.");
 
         _lines.Add(new OrderLine(productId, unitPrice, quantity, discount));
         return Result.Success();

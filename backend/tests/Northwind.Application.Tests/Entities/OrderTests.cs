@@ -119,17 +119,20 @@ public class OrderTests
     }
 
     [Fact]
-    public void AddLine_WithSameProductTwice_ShouldMergeQuantities()
+    public void AddLine_WithSameProductTwice_ShouldReturnConflict()
     {
         // Northwind's composite PK (OrderId, ProductId) doesn't allow duplicates.
-        // Our domain makes the merge explicit so the rule is visible at the call site.
+        // The domain rejects a second line for the same product so we get a clean
+        // business error rather than a DB constraint violation.
         var order = CreateValidOrder();
-
         order.AddLine(productId: 11, unitPrice: Usd(20m), quantity: 2, discount: 0f);
-        order.AddLine(productId: 11, unitPrice: Usd(20m), quantity: 5, discount: 0f);
 
+        var result = order.AddLine(productId: 11, unitPrice: Usd(20m), quantity: 5, discount: 0f);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.DuplicateProduct");
         order.Lines.Should().HaveCount(1);
-        order.Lines.First().Quantity.Should().Be(7);
+        order.Lines.First().Quantity.Should().Be(2); // original quantity unchanged
     }
 
     [Theory]

@@ -286,7 +286,7 @@
 
                     <template v-slot:option="scope">
                       <q-item v-bind="scope.itemProps" dense class="q-py-sm"
-                        :disable="scope.opt.unitsInStock === 0">
+                        :disable="scope.opt.unitsInStock === 0 || isProductTakenByOtherLine(scope.opt.id, index)">
                         <q-item-section>
                           <q-item-label class="text-weight-medium text-grey-9">{{ scope.opt.productName }}</q-item-label>
                           <q-item-label caption class="text-grey-6">
@@ -548,6 +548,10 @@ function filterCustomers (val, update) {
       )
     }
   })
+}
+
+function isProductTakenByOtherLine (productId, currentIndex) {
+  return form.lines.some((l, i) => i !== currentIndex && l.productId === productId)
 }
 
 function filterProducts (val, update, index) {

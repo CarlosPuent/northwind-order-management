@@ -870,6 +870,76 @@ public class OrderServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be("Order.InvalidRequiredDate");
     }
+
+    // ==================================================================
+    // Duplicate product line protection
+    // ==================================================================
+
+    [Fact]
+    public async Task CreateAsync_WithDuplicateProductLines_ShouldReturnConflict()
+    {
+        var cmd = ValidCreateCommand(lines: new List<OrderLineCommand>
+        {
+            new(ProductId: 11, Quantity: 2, Discount: 0f),
+            new(ProductId: 11, Quantity: 3, Discount: 0f)  // same product
+        });
+
+        var result = await _sut.CreateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.DuplicateProduct");
+        // No stock lookup or order add should occur
+        _productRepo.Verify(p => p.GetByIdTrackedAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _orderRepo.Verify(r => r.Add(It.IsAny<Order>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithDistinctProductLines_ShouldSucceed()
+    {
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(22, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(22, 30m));
+
+        var cmd = ValidCreateCommand(lines: new List<OrderLineCommand>
+        {
+            new(ProductId: 11, Quantity: 2, Discount: 0f),
+            new(ProductId: 22, Quantity: 1, Discount: 0f)
+        });
+
+        var result = await _sut.CreateAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Lines.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithDuplicateProductLines_ShouldReturnConflict()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
+            ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
+            Freight: 20m,
+            Lines: new List<OrderLineCommand>
+            {
+                new(ProductId: 11, Quantity: 2, Discount: 0f),
+                new(ProductId: 11, Quantity: 3, Discount: 0f)  // duplicate
+            }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.DuplicateProduct");
+        // No stock operations should occur — check fires before reconciliation
+        _productRepo.Verify(p => p.GetByIdTrackedAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
 }
 
 
