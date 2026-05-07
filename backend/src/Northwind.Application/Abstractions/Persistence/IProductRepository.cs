@@ -10,6 +10,12 @@ public interface IProductRepository
     Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Same as GetByIdAsync but returns a tracked entity so EF Core persists
+    /// mutations (e.g. stock changes) when SaveChangesAsync is called.
+    /// </summary>
+    Task<Product?> GetByIdTrackedAsync(int id, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Searches active (non-discontinued) products by name fragment. Used by
     /// the order form's product autocomplete.
     /// </summary>

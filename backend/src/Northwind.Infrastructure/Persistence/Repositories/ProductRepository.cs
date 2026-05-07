@@ -15,6 +15,10 @@ internal sealed class ProductRepository : IProductRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
+    public async Task<Product?> GetByIdTrackedAsync(int id, CancellationToken cancellationToken = default)
+        => await _db.Products
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
     public async Task<IReadOnlyList<Product>> SearchByNameAsync(
         string fragment,
         int maxResults,

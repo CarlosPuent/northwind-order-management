@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Projects\\\\Northwind.OrderManagement\\\\frontend\" -Recurse -Directory -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell(tree \"c:\\\\Projects\\\\Northwind.OrderManagement\\\\frontend\\\\src\" -L 3 -I 'node_modules')"
+    ]
+  }
+}

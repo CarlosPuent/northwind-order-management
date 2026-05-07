@@ -97,9 +97,12 @@ public sealed class OrderService : IOrderService
 
         foreach (var line in cmd.Lines)
         {
-            var product = await _products.GetByIdAsync(line.ProductId, cancellationToken);
+            var product = await _products.GetByIdTrackedAsync(line.ProductId, cancellationToken);
             if (product is null)
                 return Error.NotFound("Order.ProductNotFound", $"Product {line.ProductId} was not found.");
+
+            var stockResult = product.DecrementStock(line.Quantity);
+            if (stockResult.IsFailure) return stockResult.Error;
 
             var lineResult = order.AddLine(line.ProductId, product.UnitPrice, line.Quantity, line.Discount);
             if (lineResult.IsFailure) return lineResult.Error;
@@ -146,17 +149,25 @@ public sealed class OrderService : IOrderService
             if (assignResult.IsFailure) return assignResult.Error;
         }
 
-        var existingProductIds = order.Lines.Select(l => l.ProductId).ToList();
-        foreach (var pid in existingProductIds) order.RemoveLine(pid);
+        var existingLines = order.Lines.Select(l => (l.ProductId, l.Quantity)).ToList();
+        foreach (var (pid, qty) in existingLines)
+        {
+            var product = await _products.GetByIdTrackedAsync(pid, cancellationToken);
+            product?.RestoreStock(qty);
+        }
+        foreach (var (pid, _) in existingLines) order.RemoveLine(pid);
 
         if (cmd.Lines == null || cmd.Lines.Count == 0)
             return Error.Validation("Order.NoLines", "Order must have at least one line.");
 
         foreach (var line in cmd.Lines)
         {
-            var product = await _products.GetByIdAsync(line.ProductId, cancellationToken);
+            var product = await _products.GetByIdTrackedAsync(line.ProductId, cancellationToken);
             if (product is null)
                 return Error.NotFound("Order.ProductNotFound", $"Product {line.ProductId} was not found.");
+
+            var stockResult = product.DecrementStock(line.Quantity);
+            if (stockResult.IsFailure) return stockResult.Error;
 
             var lineResult = order.AddLine(line.ProductId, product.UnitPrice, line.Quantity, line.Discount);
             if (lineResult.IsFailure) return lineResult.Error;
@@ -217,6 +228,12 @@ public sealed class OrderService : IOrderService
 
         if (order.IsShipped)
             return Error.Conflict("Order.AlreadyShipped", "Cannot delete an order that has been shipped.");
+
+        foreach (var line in order.Lines)
+        {
+            var product = await _products.GetByIdTrackedAsync(line.ProductId, cancellationToken);
+            product?.RestoreStock(line.Quantity);
+        }
 
         _orders.Remove(order);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

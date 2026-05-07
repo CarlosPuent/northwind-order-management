@@ -273,7 +273,8 @@
                     </template>
 
                     <template v-slot:option="scope">
-                      <q-item v-bind="scope.itemProps" dense class="q-py-sm">
+                      <q-item v-bind="scope.itemProps" dense class="q-py-sm"
+                        :disable="scope.opt.unitsInStock === 0">
                         <q-item-section>
                           <q-item-label class="text-weight-medium text-grey-9">{{ scope.opt.productName }}</q-item-label>
                           <q-item-label caption class="text-grey-6">
@@ -302,9 +303,23 @@
                   <q-input
                     v-model.number="line.quantity"
                     outlined dense type="number" label="Qty"
-                    style="width: 80px" min="1" hide-bottom-space
+                    style="width: 80px" min="1"
+                    :max="line.unitsInStock ?? undefined"
+                    :rules="[
+                      v => v >= 1 || 'Min 1',
+                      v => line.unitsInStock == null || v <= line.unitsInStock || `Max ${line.unitsInStock}`
+                    ]"
+                    hide-bottom-space
                     class="elegant-input text-center-input"
                   />
+
+                  <div v-if="line.productId" style="width: 56px" class="text-center">
+                    <div class="text-caption text-weight-medium"
+                      :class="line.unitsInStock != null && line.quantity > line.unitsInStock ? 'text-negative' : 'text-grey-5'">
+                      {{ line.unitsInStock != null ? line.unitsInStock + ' avail.' : '' }}
+                    </div>
+                  </div>
+                  <div v-else style="width: 56px"></div>
 
                   <q-input
                     v-model.number="line.unitPrice"
@@ -484,6 +499,7 @@ function addLine () {
     quantity: 1,
     unitPrice: 0,
     discount: 0,
+    unitsInStock: null,
   })
 }
 
@@ -499,6 +515,7 @@ function onProductSelected (index) {
   if (product) {
     line.unitPrice = product.unitPrice
     line.productName = product.productName
+    line.unitsInStock = product.unitsInStock ?? null
   }
 }
 
@@ -589,6 +606,19 @@ async function submitOrder () {
     return
   }
 
+  const stockViolations = form.lines.filter(
+    l => l.unitsInStock != null && l.quantity > l.unitsInStock
+  )
+  if (stockViolations.length) {
+    $q.notify({
+      type: 'warning',
+      message: `Insufficient stock for: ${stockViolations.map(l => l.productName).join(', ')}`,
+      position: 'top-right',
+      timeout: 6000,
+    })
+    return
+  }
+
   saving.value = true
   try {
     const payload = {
@@ -673,13 +703,17 @@ async function loadOrder () {
     form.shipRegion = data.shipRegion || ''
     form.shipPostalCode = data.shipPostalCode || ''
     form.shipCountry = data.shipCountry
-    form.lines = data.lines.map(l => ({
-      productId: l.productId,
-      productName: products.value.find(p => p.id === l.productId)?.productName || l.productName || '',
-      quantity: l.quantity,
-      unitPrice: l.unitPrice,
-      discount: l.discount,
-    }))
+    form.lines = data.lines.map(l => {
+      const ref = products.value.find(p => p.id === l.productId)
+      return {
+        productId: l.productId,
+        productName: ref?.productName || l.productName || '',
+        quantity: l.quantity,
+        unitPrice: l.unitPrice,
+        discount: l.discount,
+        unitsInStock: ref?.unitsInStock ?? null,
+      }
+    })
   } catch (err) {
     // Handled by interceptor
   } finally {

@@ -38,4 +38,23 @@ public sealed class Product : Entity<int>
         ProductName = string.Empty;
         UnitPrice = Money.Zero;
     }
+
+    public Result DecrementStock(short quantity)
+    {
+        if (Discontinued)
+            return Error.Conflict("Product.Discontinued",
+                $"'{ProductName}' is discontinued and cannot be ordered.");
+
+        if (UnitsInStock is null || UnitsInStock < quantity)
+            return Error.Conflict("Product.InsufficientStock",
+                $"'{ProductName}' has only {UnitsInStock ?? 0} unit(s) in stock.");
+
+        UnitsInStock = (short)(UnitsInStock.Value - quantity);
+        return Result.Success();
+    }
+
+    public void RestoreStock(short quantity)
+    {
+        UnitsInStock = (short)((UnitsInStock ?? 0) + quantity);
+    }
 }

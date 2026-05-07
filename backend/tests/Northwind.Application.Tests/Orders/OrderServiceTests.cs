@@ -65,7 +65,7 @@ public class OrderServiceTests
     [Fact]
     public async Task CreateAsync_WithValidCommand_ShouldReturnSuccess()
     {
-        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FakeProduct(11, 20m));
 
         var result = await _sut.CreateAsync(ValidCreateCommand());
@@ -161,7 +161,7 @@ public class OrderServiceTests
     [Fact]
     public async Task CreateAsync_WithNonExistentProduct_ShouldReturnFailure()
     {
-        _productRepo.Setup(p => p.GetByIdAsync(999, It.IsAny<CancellationToken>()))
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(999, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Product?)null);
 
         var cmd = ValidCreateCommand(lines: new List<OrderLineCommand>
@@ -261,6 +261,8 @@ public class OrderServiceTests
         var order = CreateSampleOrder();
         _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
 
         var result = await _sut.DeleteAsync(1);
 
@@ -326,7 +328,7 @@ public class OrderServiceTests
         var order = CreateSampleOrder();
         _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
-        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FakeProduct(11, 20m));
 
         var cmd = new UpdateOrderCommand(
@@ -537,7 +539,7 @@ public class OrderServiceTests
     [Fact]
     public async Task CreateAsync_WithoutGeocode_ShouldNotCallGeocodeRepository()
     {
-        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FakeProduct(11, 20m));
 
         var result = await _sut.CreateAsync(ValidCreateCommand());
@@ -553,7 +555,7 @@ public class OrderServiceTests
         // In unit tests EF Core does not run, so order.Id stays 0 after SaveChanges.
         // The service guards on order.Id > 0 — geocode is only saved in the real DB flow.
         // This test documents that invariant explicitly.
-        _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
             .ReturnsAsync(FakeProduct(11, 20m));
 
         var cmd = ValidCreateCommand() with
@@ -650,6 +652,122 @@ public class OrderServiceTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Lines[0].ProductName.Should().Be("Product #11");
+    }
+
+    // ==================================================================
+    // Inventory — stock decrement, validation, restoration
+    // ==================================================================
+
+    [Fact]
+    public async Task CreateAsync_ShouldDecrementUnitsInStock()
+    {
+        var product = FakeProduct(11, 20m); // 100 units
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var result = await _sut.CreateAsync(ValidCreateCommand()); // qty = 2
+
+        result.IsSuccess.Should().BeTrue();
+        product.UnitsInStock.Should().Be(98);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithInsufficientStock_ShouldReturnFailure()
+    {
+        var product = new Product(11, "Product 11", new Money(20m, "USD"), false, (short)1);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var cmd = ValidCreateCommand(lines: new List<OrderLineCommand>
+        {
+            new(ProductId: 11, Quantity: 5, Discount: 0f)
+        });
+
+        var result = await _sut.CreateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Product.InsufficientStock");
+        _orderRepo.Verify(r => r.Add(It.IsAny<Order>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WithDiscontinuedProduct_ShouldReturnFailure()
+    {
+        var product = new Product(11, "Product 11", new Money(20m, "USD"), true, (short)100);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var result = await _sut.CreateAsync(ValidCreateCommand());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Product.Discontinued");
+        _orderRepo.Verify(r => r.Add(It.IsAny<Order>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ShouldRestoreUnitsInStock()
+    {
+        var product = FakeProduct(11, 20m); // 100 units
+        var order = CreateSampleOrder();    // line: productId=11, qty=2
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var result = await _sut.DeleteAsync(1);
+
+        result.IsSuccess.Should().BeTrue();
+        product.UnitsInStock.Should().Be(102); // 100 + 2 restored
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldRestoreOldStockAndDecrementNewStock()
+    {
+        var product = FakeProduct(11, 20m); // 100 units
+        var order = CreateSampleOrder();    // line: productId=11, qty=2
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
+            ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
+            Freight: 20m,
+            Lines: new List<OrderLineCommand> { new(11, 5, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        // 100 + 2 (restore old) - 5 (decrement new) = 97
+        product.UnitsInStock.Should().Be(97);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WithInsufficientStockOnNewLine_ShouldReturnFailure()
+    {
+        // Product has 3 units; after restoring the old 2 it has 5, but the new line wants 10.
+        var product = new Product(11, "Product 11", new Money(20m, "USD"), false, (short)3);
+        var order = CreateSampleOrder(); // line: productId=11, qty=2
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
+            ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
+            Freight: 20m,
+            Lines: new List<OrderLineCommand> { new(11, 10, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Product.InsufficientStock");
     }
 }
 

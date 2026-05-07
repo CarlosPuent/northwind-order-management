@@ -290,7 +290,7 @@ var assemblies = [
   {
     "name": "Northwind.Api",
     "classes": [
-      { "name": "Northwind.Api.Controllers.AnalyticsController", "rp": "Northwind.Api_AnalyticsController.html", "cl": 0, "ucl": 143, "cal": 143, "tl": 235, "cb": 0, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Northwind.Api.Controllers.AnalyticsController", "rp": "Northwind.Api_AnalyticsController.html", "cl": 133, "ucl": 10, "cal": 143, "tl": 235, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Api.Controllers.CustomersController", "rp": "Northwind.Api_CustomersController.html", "cl": 32, "ucl": 0, "cal": 32, "tl": 65, "cb": 2, "tb": 2, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Api.Controllers.EmployeesController", "rp": "Northwind.Api_EmployeesController.html", "cl": 15, "ucl": 0, "cal": 15, "tl": 30, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Api.Controllers.GeocodingController", "rp": "Northwind.Api_GeocodingController.html", "cl": 21, "ucl": 0, "cal": 21, "tl": 51, "cb": 4, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
@@ -312,7 +312,7 @@ var assemblies = [
       { "name": "Northwind.Application.Orders.Commands.UpdateOrderCommand", "rp": "Northwind.Application_UpdateOrderCommand.html", "cl": 15, "ucl": 0, "cal": 15, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Application.Orders.Dtos.OrderDto", "rp": "Northwind.Application_OrderDto.html", "cl": 18, "ucl": 0, "cal": 18, "tl": 37, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Application.Orders.Dtos.OrderLineDto", "rp": "Northwind.Application_OrderLineDto.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 37, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Northwind.Application.Orders.OrderService", "rp": "Northwind.Application_OrderService.html", "cl": 146, "ucl": 24, "cal": 170, "tl": 281, "cb": 57, "tb": 78, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Northwind.Application.Orders.OrderService", "rp": "Northwind.Application_OrderService.html", "cl": 160, "ucl": 24, "cal": 184, "tl": 298, "cb": 68, "tb": 90, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Application.Orders.Validators.CreateOrderCommandValidator", "rp": "Northwind.Application_CreateOrderCommandValidator.html", "cl": 30, "ucl": 0, "cal": 30, "tl": 51, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Application.Orders.Validators.ShipOrderCommandValidator", "rp": "Northwind.Application_ShipOrderCommandValidator.html", "cl": 11, "ucl": 0, "cal": 11, "tl": 25, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Application.Orders.Validators.UpdateOrderCommandValidator", "rp": "Northwind.Application_UpdateOrderCommandValidator.html", "cl": 32, "ucl": 0, "cal": 32, "tl": 49, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
@@ -328,7 +328,7 @@ var assemblies = [
       { "name": "Northwind.Domain.Entities.Employee", "rp": "Northwind.Domain_Employee.html", "cl": 13, "ucl": 6, "cal": 19, "tl": 41, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Domain.Entities.Order", "rp": "Northwind.Domain_Order.html", "cl": 121, "ucl": 14, "cal": 135, "tl": 251, "cb": 46, "tb": 50, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Domain.Entities.OrderLine", "rp": "Northwind.Domain_OrderLine.html", "cl": 19, "ucl": 5, "cal": 24, "tl": 64, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
-      { "name": "Northwind.Domain.Entities.Product", "rp": "Northwind.Domain_Product.html", "cl": 11, "ucl": 5, "cal": 16, "tl": 41, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Northwind.Domain.Entities.Product", "rp": "Northwind.Domain_Product.html", "cl": 24, "ucl": 5, "cal": 29, "tl": 60, "cb": 6, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Domain.Entities.Shipper", "rp": "Northwind.Domain_Shipper.html", "cl": 7, "ucl": 4, "cal": 11, "tl": 25, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Domain.Entities.ShippingGeocode", "rp": "Northwind.Domain_ShippingGeocode.html", "cl": 36, "ucl": 7, "cal": 43, "tl": 112, "cb": 9, "tb": 10, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
       { "name": "Northwind.Domain.ValueObjects.Address", "rp": "Northwind.Domain_Address.html", "cl": 34, "ucl": 1, "cal": 35, "tl": 75, "cb": 14, "tb": 14, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
@@ -348,22 +348,22 @@ var riskHotspotMetrics = [
 
 var riskHotspots = [
   {
-    "assembly": "Northwind.Application", "class": "Northwind.Application.Orders.OrderService", "reportPath": "Northwind.Application_OrderService.html", "methodName": "SaveGeocodeAsync()", "methodShortName": "SaveGeocodeAsync()", "fileIndex": 0, "line": 235,
+    "assembly": "Northwind.Application", "class": "Northwind.Application.Orders.OrderService", "reportPath": "Northwind.Application_OrderService.html", "methodName": "SaveGeocodeAsync()", "methodShortName": "SaveGeocodeAsync()", "fileIndex": 0, "line": 252,
     "metrics": [
       { "value": 42, "exceeded": true },
       { "value": 6, "exceeded": false },
     ]},
   {
-    "assembly": "Northwind.Application", "class": "Northwind.Application.Orders.OrderService", "reportPath": "Northwind.Application_OrderService.html", "methodName": "UpdateAsync()", "methodShortName": "UpdateAsync()", "fileIndex": 0, "line": 124,
+    "assembly": "Northwind.Application", "class": "Northwind.Application.Orders.OrderService", "reportPath": "Northwind.Application_OrderService.html", "methodName": "UpdateAsync()", "methodShortName": "UpdateAsync()", "fileIndex": 0, "line": 127,
     "metrics": [
-      { "value": 36, "exceeded": true },
-      { "value": 28, "exceeded": true },
+      { "value": 41, "exceeded": true },
+      { "value": 34, "exceeded": true },
     ]},
   {
     "assembly": "Northwind.Application", "class": "Northwind.Application.Orders.OrderService", "reportPath": "Northwind.Application_OrderService.html", "methodName": "CreateAsync()", "methodShortName": "CreateAsync()", "fileIndex": 0, "line": 79,
     "metrics": [
-      { "value": 20, "exceeded": false },
-      { "value": 20, "exceeded": true },
+      { "value": 22, "exceeded": false },
+      { "value": 22, "exceeded": true },
     ]},
   {
     "assembly": "Northwind.Api", "class": "Northwind.Api.Controllers.InvoicesController", "reportPath": "Northwind.Api_InvoicesController.html", "methodName": "Generate()", "methodShortName": "Generate()", "fileIndex": 0, "line": 40,
