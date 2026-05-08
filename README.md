@@ -161,9 +161,9 @@ The backend includes:
 
 Current status:
 
-- ✅ 202 automated tests passing
-- ✅ 0 failures
-- ✅ XPlat Code Coverage enabled via Coverlet
+- 202 automated tests passing
+- 0 failures
+- XPlat Code Coverage enabled via Coverlet
 
 ---
 
