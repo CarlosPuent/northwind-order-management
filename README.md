@@ -208,6 +208,12 @@ API → Application → Domain ← Infrastructure
 
 ---
 
+## Architecture Diagrams
+
+Detailed architecture diagrams and system design documentation are available here:
+
+[View Architecture PDF](docs/northwind-architecture.pdf)
+
 ## API Reference
 
 ```
