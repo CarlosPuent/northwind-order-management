@@ -4,6 +4,7 @@ public sealed record UpdateOrderCommand(
     int OrderId,
     string CustomerId,
     int EmployeeId,
+    DateTime OrderDate,
     int? ShipperId,
     string ShipName,
     string ShipStreet,

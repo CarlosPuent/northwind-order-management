@@ -124,7 +124,7 @@ public class OrdersControllerTests
     public async Task Update_WhenIdMismatch_ShouldReturnBadRequest()
     {
         var cmd = new UpdateOrderCommand(
-            999, "ALFKI", 1, null, "John", "123 St", "NYC",
+            999, "ALFKI", 1, DateTime.UtcNow, null, "John", "123 St", "NYC",
             null, null, "USA", 0,
             new List<OrderLineCommand> { new(1, 1, 0f) });
 
@@ -139,7 +139,7 @@ public class OrdersControllerTests
     {
         var dto = new OrderDto { Id = 1 };
         var cmd = new UpdateOrderCommand(
-            1, "ALFKI", 1, null, "John", "123 St", "NYC",
+            1, "ALFKI", 1, DateTime.UtcNow, null, "John", "123 St", "NYC",
             null, null, "USA", 0,
             new List<OrderLineCommand> { new(1, 1, 0f) });
 
@@ -205,6 +205,60 @@ public class OrdersControllerTests
             .ReturnsAsync(Error.Conflict("Order.AlreadyShipped", "Cannot delete."));
 
         var result = await _sut.Delete(1, CancellationToken.None);
+
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(409);
+    }
+
+    // ---- GetArchived ----
+
+    [Fact]
+    public async Task GetArchived_ShouldReturnOk_WithArchivedOrders()
+    {
+        var archived = new List<OrderDto> { new() { Id = 5, CustomerId = "ALFKI" } }
+            .AsReadOnly();
+
+        _service.Setup(s => s.GetArchivedAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(archived);
+
+        var result = await _sut.GetArchived(CancellationToken.None);
+
+        result.Should().BeOfType<OkObjectResult>();
+        ((OkObjectResult)result).Value.Should().Be(archived);
+    }
+
+    // ---- Restore ----
+
+    [Fact]
+    public async Task Restore_WhenSuccess_ShouldReturnNoContent()
+    {
+        _service.Setup(s => s.RestoreAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
+
+        var result = await _sut.Restore(1, CancellationToken.None);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task Restore_WhenNotFound_ShouldReturn404()
+    {
+        _service.Setup(s => s.RestoreAsync(999, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Error.NotFound("Order.NotFound", "Not found."));
+
+        var result = await _sut.Restore(999, CancellationToken.None);
+
+        result.Should().BeOfType<ObjectResult>();
+        ((ObjectResult)result).StatusCode.Should().Be(404);
+    }
+
+    [Fact]
+    public async Task Restore_WhenOrderNotDeleted_ShouldReturn409()
+    {
+        _service.Setup(s => s.RestoreAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Error.Conflict("Order.NotDeleted", "Order is not currently deleted."));
+
+        var result = await _sut.Restore(1, CancellationToken.None);
 
         result.Should().BeOfType<ObjectResult>();
         ((ObjectResult)result).StatusCode.Should().Be(409);

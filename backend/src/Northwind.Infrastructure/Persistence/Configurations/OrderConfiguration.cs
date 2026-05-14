@@ -80,6 +80,10 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
                 .HasColumnType("nvarchar(15)");
         });
 
+        builder.Property(o => o.IsDeleted).HasDefaultValue(false);
+        builder.Property(o => o.DeletedAt).IsRequired(false);
+        builder.HasIndex(o => o.IsDeleted);
+
         // Computed properties — never persisted.
         builder.Ignore(o => o.IsShipped);
         builder.Ignore(o => o.IsEditable);

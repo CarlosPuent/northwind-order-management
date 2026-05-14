@@ -32,6 +32,9 @@ public sealed class Order : Entity<int>
     /// Northwind's schema doesn't store a status column — the presence of a ShippedDate
     /// is the source of truth.
     /// </summary>
+    public bool IsDeleted { get; private set; }
+    public DateTime? DeletedAt { get; private set; }
+
     public bool IsShipped => ShippedDate.HasValue;
 
     /// <summary>True while the order can still be modified. Once shipped, lines are frozen.</summary>
@@ -102,6 +105,7 @@ public sealed class Order : Entity<int>
         ShipName = string.Empty;
         ShipAddress = null!;
         Freight = Money.Zero;
+        IsDeleted = false;
     }
 
     /// <summary>
@@ -127,7 +131,7 @@ public sealed class Order : Entity<int>
             return Error.Validation("Order.MissingShipName", "Recipient name is required.");
 
         if (orderDate > DateTime.UtcNow.AddDays(1))
-            return Error.Validation("Order.FutureDate", "Order date cannot be in the future.");
+            return Error.Validation("Order.FutureOrderDate", "Order date cannot be in the future.");
 
         return new Order(customerId, employeeId, orderDate, shipName, shipAddress, freight);
     }
@@ -237,6 +241,20 @@ public sealed class Order : Entity<int>
         return Result.Success();
     }
 
+    public Result UpdateOrderDate(DateTime orderDate)
+    {
+        if (!IsEditable)
+            return Error.Conflict(
+                "Order.NotEditable",
+                "Cannot modify an order that has been shipped.");
+
+        if (orderDate > DateTime.UtcNow.AddDays(1))
+            return Error.Validation("Order.FutureOrderDate", "Order date cannot be in the future.");
+
+        OrderDate = orderDate;
+        return Result.Success();
+    }
+
     public Result AssignShipper(int shipperId)
     {
         if (!IsEditable)
@@ -294,6 +312,35 @@ public sealed class Order : Entity<int>
                 "Cannot ship an order without a shipper.");
 
         ShippedDate = shippedDate;
+        return Result.Success();
+    }
+
+    public Result SoftDelete()
+    {
+        if (IsShipped)
+            return Error.Conflict(
+                "Order.AlreadyShipped",
+                "Cannot delete an order that has been shipped.");
+
+        if (IsDeleted)
+            return Error.Conflict(
+                "Order.AlreadyDeleted",
+                "Order is already deleted.");
+
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        return Result.Success();
+    }
+
+    public Result Restore()
+    {
+        if (!IsDeleted)
+            return Error.Conflict(
+                "Order.NotDeleted",
+                "Order is not currently deleted.");
+
+        IsDeleted = false;
+        DeletedAt = null;
         return Result.Success();
     }
 }

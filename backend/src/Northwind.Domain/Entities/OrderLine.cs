@@ -53,12 +53,4 @@ public sealed class OrderLine : Entity<int>
         UnitPrice = Money.Zero;
     }
 
-    /// <summary>
-    /// Updates the quantity. Internal — Order coordinates these changes
-    /// and is the only one that should call this method.
-    /// </summary>
-    internal void UpdateQuantity(short newQuantity)
-    {
-        Quantity = newQuantity;
-    }
 }

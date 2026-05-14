@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Northwind.Infrastructure.Persistence;
+using Northwind.Application.Analytics;
 
 namespace Northwind.Api.Controllers;
 
@@ -12,38 +11,13 @@ namespace Northwind.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class AnalyticsController : ControllerBase
 {
-    private readonly NorthwindDbContext _db;
+    private readonly IAnalyticsRepository _analytics;
 
-    public AnalyticsController(NorthwindDbContext db)
+    public AnalyticsController(IAnalyticsRepository analytics)
     {
-        _db = db;
+        _analytics = analytics;
     }
 
-    // =========================
-    // DTOs
-    // =========================
-    public sealed record OrdersOverTimeDto(
-        int Year,
-        int Month,
-        int OrderCount,
-        decimal TotalRevenue
-    );
-
-    public sealed record ShipmentsByRegionDto(
-        string Country,
-        int OrderCount
-    );
-
-    public sealed record TopCustomerDto(
-        string CustomerId,
-        string CompanyName,
-        int OrderCount,
-        decimal TotalRevenue
-    );
-
-    // =========================
-    // Orders Over Time
-    // =========================
     /// <summary>
     /// Orders grouped by month. Used by the bar chart on the dashboard.
     /// </summary>
@@ -51,47 +25,8 @@ public sealed class AnalyticsController : ControllerBase
     public async Task<ActionResult<List<OrdersOverTimeDto>>> OrdersOverTime(
         [FromQuery] int? year,
         CancellationToken ct)
-    {
-        var orders = await _db.Orders
-            .AsNoTracking()
-            .Where(o => !year.HasValue || o.OrderDate.Year == year.Value)
-            .Select(o => new
-            {
-                o.Id,
-                o.OrderDate,
-                Lines = o.Lines.Select(l => new
-                {
-                    l.Quantity,
-                    l.Discount,
-                    Amount = l.UnitPrice.Amount
-                })
-            })
-            .ToListAsync(ct);
+        => Ok(await _analytics.GetOrdersOverTimeAsync(year, ct));
 
-        var result = orders
-            .GroupBy(o => new { o.OrderDate.Year, o.OrderDate.Month })
-            .Select(g => new OrdersOverTimeDto(
-                g.Key.Year,
-                g.Key.Month,
-                g.Count(),
-                g.Sum(o =>
-                    o.Lines.Sum(l =>
-                        l.Amount *
-                        l.Quantity *
-                        (1m - (decimal)l.Discount)
-                    )
-                )
-            ))
-            .OrderBy(x => x.Year)
-            .ThenBy(x => x.Month)
-            .ToList();
-
-        return Ok(result);
-    }
-
-    // =========================
-    // Shipments By Region
-    // =========================
     /// <summary>
     /// Shipments grouped by country. Supports optional year filter
     /// so the donut chart stays consistent with the selected year.
@@ -100,36 +35,8 @@ public sealed class AnalyticsController : ControllerBase
     public async Task<ActionResult<List<ShipmentsByRegionDto>>> ShipmentsByRegion(
         [FromQuery] int? year,
         CancellationToken ct)
-    {
-        var query = _db.Orders.AsNoTracking();
+        => Ok(await _analytics.GetShipmentsByRegionAsync(year, ct));
 
-        if (year.HasValue)
-            query = query.Where(o => o.OrderDate.Year == year.Value);
-
-        var raw = await query
-            .Select(o => new
-            {
-                Country = o.ShipAddress.Country
-            })
-            .ToListAsync(ct);
-
-        var result = raw
-            .Where(x => !string.IsNullOrWhiteSpace(x.Country))
-            .GroupBy(x => x.Country!)
-            .Select(g => new ShipmentsByRegionDto(
-                g.Key,
-                g.Count()
-            ))
-            .OrderByDescending(x => x.OrderCount)
-            .Take(10)
-            .ToList();
-
-        return Ok(result);
-    }
-
-    // =========================
-    // Top Customers
-    // =========================
     /// <summary>
     /// Returns the top N customers by revenue for the given year.
     /// GET /api/analytics/top-customers?year=1997&amp;limit=5
@@ -139,97 +46,22 @@ public sealed class AnalyticsController : ControllerBase
         [FromQuery] int? year,
         [FromQuery] int limit = 5,
         CancellationToken ct = default)
-    {
-        var query = _db.Orders.AsNoTracking();
+        => Ok(await _analytics.GetTopCustomersAsync(year, Math.Clamp(limit, 1, 20), ct));
 
-        if (year.HasValue)
-            query = query.Where(o => o.OrderDate.Year == year.Value);
-
-        var raw = await query
-            .Select(o => new
-            {
-                o.CustomerId,
-                Lines = o.Lines.Select(l => new
-                {
-                    l.Quantity,
-                    l.Discount,
-                    Amount = l.UnitPrice.Amount
-                })
-            })
-            .ToListAsync(ct);
-
-        // Join customer names from a separate query to avoid N+1
-        var customerIds = raw.Select(o => o.CustomerId).Distinct().ToList();
-        var customers = await _db.Customers
-            .AsNoTracking()
-            .Where(c => customerIds.Contains(c.Id))
-            .Select(c => new { c.Id, c.CompanyName })
-            .ToDictionaryAsync(c => c.Id, c => c.CompanyName, ct);
-
-        var result = raw
-            .GroupBy(o => o.CustomerId)
-            .Select(g => new TopCustomerDto(
-                CustomerId: g.Key,
-                CompanyName: customers.GetValueOrDefault(g.Key, g.Key),
-                OrderCount: g.Count(),
-                TotalRevenue: g.Sum(o =>
-                    o.Lines.Sum(l =>
-                        l.Amount * l.Quantity * (1m - (decimal)l.Discount)
-                    )
-                )
-            ))
-            .OrderByDescending(x => x.TotalRevenue)
-            .Take(Math.Clamp(limit, 1, 20))
-            .ToList();
-
-        return Ok(result);
-    }
-
-    // =========================
-    // Available Years
-    // =========================
     /// <summary>
     /// Available years for the year filter dropdown.
     /// </summary>
     [HttpGet("available-years")]
-    public async Task<ActionResult<List<int>>> AvailableYears(
-        CancellationToken ct)
-    {
-        var years = await _db.Orders
-            .AsNoTracking()
-            .Select(o => o.OrderDate.Year)
-            .Distinct()
-            .OrderByDescending(y => y)
-            .ToListAsync(ct);
-
-        return Ok(years);
-    }
+    public async Task<ActionResult<List<int>>> AvailableYears(CancellationToken ct)
+        => Ok(await _analytics.GetAvailableYearsAsync(ct));
 
     /// <summary>
     /// Returns the most recently validated delivery locations from ShippingGeocodes.
     /// Used by the dashboard map widget.
     /// </summary>
     [HttpGet("delivery-locations")]
-    public async Task<ActionResult> DeliveryLocations(
+    public async Task<ActionResult<List<DeliveryLocationDto>>> DeliveryLocations(
         [FromQuery] int limit = 20,
         CancellationToken ct = default)
-    {
-        var locations = await _db.ShippingGeocodes
-            .AsNoTracking()
-            .OrderByDescending(g => g.ValidatedAt)
-            .Take(Math.Clamp(limit, 1, 50))
-            .Select(g => new
-            {
-                g.OrderId,
-                Latitude = g.Coordinates.Latitude,
-                Longitude = g.Coordinates.Longitude,
-                City = g.StandardizedAddress.City,
-                Country = g.StandardizedAddress.Country,
-                PlaceType = g.PlaceType,
-                ValidatedAt = g.ValidatedAt
-            })
-            .ToListAsync(ct);
-
-        return Ok(locations);
-    }
+        => Ok(await _analytics.GetDeliveryLocationsAsync(Math.Clamp(limit, 1, 50), ct));
 }

@@ -39,3 +39,8 @@ Thumbs.db
 
 # But DO commit a template version
 !**/appsettings.Development.json.example
+# Coverage reports (generated, not tracked)
+**/coverage-report/
+
+# Claude AI workspace
+**/.claude/

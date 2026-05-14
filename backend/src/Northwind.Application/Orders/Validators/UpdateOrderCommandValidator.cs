@@ -16,6 +16,11 @@ public sealed class UpdateOrderCommandValidator : AbstractValidator<UpdateOrderC
         RuleFor(x => x.EmployeeId)
             .GreaterThan(0).WithMessage("Employee is required.");
 
+        RuleFor(x => x.OrderDate)
+            .NotEmpty().WithMessage("Order date is required.")
+            .LessThanOrEqualTo(_ => DateTime.UtcNow.AddDays(1))
+            .WithMessage("Order date cannot be in the future.");
+
         RuleFor(x => x.ShipName)
             .NotEmpty().WithMessage("Recipient name is required.");
 
@@ -30,6 +35,11 @@ public sealed class UpdateOrderCommandValidator : AbstractValidator<UpdateOrderC
 
         RuleFor(x => x.Freight)
             .GreaterThanOrEqualTo(0).WithMessage("Freight cannot be negative.");
+
+        RuleFor(x => x.RequiredDate)
+            .GreaterThanOrEqualTo(x => x.OrderDate)
+            .When(x => x.RequiredDate.HasValue)
+            .WithMessage("Required date must be on or after the order date.");
 
         RuleFor(x => x.Lines)
             .NotEmpty().WithMessage("Order must have at least one line item.");

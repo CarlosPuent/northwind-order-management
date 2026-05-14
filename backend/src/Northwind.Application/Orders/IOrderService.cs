@@ -26,4 +26,8 @@ public interface IOrderService
     Task<Result<OrderDto>> ShipAsync(ShipOrderCommand cmd, CancellationToken cancellationToken = default);
 
     Task<Result> DeleteAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<Result> RestoreAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<OrderDto>> GetArchivedAsync(CancellationToken cancellationToken = default);
 }

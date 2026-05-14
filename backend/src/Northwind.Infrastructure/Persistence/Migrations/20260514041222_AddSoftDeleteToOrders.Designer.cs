@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Northwind.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Northwind.Infrastructure.Persistence;
 namespace Northwind.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(NorthwindDbContext))]
-    partial class NorthwindDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260514041222_AddSoftDeleteToOrders")]
+    partial class AddSoftDeleteToOrders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

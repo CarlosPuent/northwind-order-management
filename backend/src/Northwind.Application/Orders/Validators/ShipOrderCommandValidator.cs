@@ -18,7 +18,7 @@ public sealed class ShipOrderCommandValidator : AbstractValidator<ShipOrderComma
             .GreaterThan(0).WithMessage("Shipper is required to mark an order as shipped.");
 
         RuleFor(x => x.ShippedDate)
-            .LessThanOrEqualTo(DateTime.UtcNow.AddDays(1))
+            .LessThanOrEqualTo(_ => DateTime.UtcNow.AddDays(1))
             .When(x => x.ShippedDate.HasValue)
             .WithMessage("Shipped date cannot be in the future.");
     }

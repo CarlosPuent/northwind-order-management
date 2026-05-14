@@ -164,6 +164,9 @@ public sealed class OrderService : IOrderService
         var updateEmployee = order.UpdateEmployee(cmd.EmployeeId);
         if (updateEmployee.IsFailure) return updateEmployee.Error;
 
+        var updateOrderDate = order.UpdateOrderDate(cmd.OrderDate);
+        if (updateOrderDate.IsFailure) return updateOrderDate.Error;
+
         var freightResult = Money.Create(cmd.Freight, "USD");
         if (freightResult.IsFailure) return freightResult.Error;
 
@@ -271,9 +274,47 @@ public sealed class OrderService : IOrderService
             product?.RestoreStock(line.Quantity);
         }
 
-        _orders.Remove(order);
+        var softDeleteResult = order.SoftDelete();
+        if (softDeleteResult.IsFailure) return softDeleteResult.Error;
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    public async Task<Result> RestoreAsync(
+        int id,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await _orders.GetByIdIncludingDeletedAsync(id, cancellationToken);
+        if (order is null)
+            return Error.NotFound("Order.NotFound", $"Order {id} was not found.");
+
+        if (!order.IsDeleted)
+            return Error.Conflict("Order.NotDeleted", "Order is not currently deleted.");
+
+        var restoreResult = order.Restore();
+        if (restoreResult.IsFailure) return restoreResult.Error;
+
+        foreach (var line in order.Lines)
+        {
+            var product = await _products.GetByIdTrackedAsync(line.ProductId, cancellationToken);
+            if (product is null)
+                return Error.NotFound("Order.ProductNotFound",
+                    $"Product {line.ProductId} was not found.");
+
+            var stockResult = product.DecrementStock(line.Quantity);
+            if (stockResult.IsFailure) return stockResult.Error;
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    public async Task<IReadOnlyList<OrderDto>> GetArchivedAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var orders = await _orders.GetArchivedAsync(cancellationToken);
+        return orders.Select(o => MapToDto(o)).ToList().AsReadOnly();
     }
 
     // ------------------------------------------------------------------

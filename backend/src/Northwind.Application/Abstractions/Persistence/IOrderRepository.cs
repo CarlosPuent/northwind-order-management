@@ -17,6 +17,10 @@ public interface IOrderRepository
     DateTime? toDate = null,
     CancellationToken cancellationToken = default);
 
+    Task<Order?> GetByIdIncludingDeletedAsync(int id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Order>> GetArchivedAsync(CancellationToken cancellationToken = default);
+
     void Add(Order order);
     void Remove(Order order);
 }

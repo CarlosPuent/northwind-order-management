@@ -98,7 +98,7 @@ public class OrderTests
             "ALFKI", 1, farFuture, "John Doe", SampleAddress(), Usd(10m));
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("Order.FutureDate");
+        result.Error.Code.Should().Be("Order.FutureOrderDate");
     }
 
     // ----------------------------------------------------------------------

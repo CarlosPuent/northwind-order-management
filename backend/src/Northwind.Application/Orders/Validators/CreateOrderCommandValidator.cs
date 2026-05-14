@@ -18,6 +18,11 @@ public sealed class CreateOrderCommandValidator : AbstractValidator<CreateOrderC
         RuleFor(x => x.EmployeeId)
             .GreaterThan(0).WithMessage("Employee is required.");
 
+        RuleFor(x => x.OrderDate)
+            .NotEmpty().WithMessage("Order date is required.")
+            .LessThanOrEqualTo(_ => DateTime.UtcNow.AddDays(1))
+            .WithMessage("Order date cannot be in the future.");
+
         RuleFor(x => x.ShipName)
             .NotEmpty().WithMessage("Recipient name is required.");
 

@@ -166,7 +166,7 @@
                   class="col-12 col-sm-6 elegant-input"
                   :rules="[val => !!val || 'Recipient name is required']"
                   hide-bottom-space
-                  tabindex="6"
+                  tabindex="7"
                 />
 
                 <q-input
@@ -176,20 +176,20 @@
                   class="col-12 col-sm-6 elegant-input"
                   :rules="[val => !!val || 'Street is required']"
                   hide-bottom-space
-                  tabindex="7"
+                  tabindex="8"
                 />
               </div>
 
               <div class="row q-col-gutter-md q-mb-md">
                 <q-input v-model="form.shipCity" outlined label="City *" class="col-12 col-sm-6 elegant-input"
-                  :rules="[val => !!val || 'City is required']" hide-bottom-space tabindex="8" />
-                <q-input v-model="form.shipRegion" outlined label="Region" class="col-12 col-sm-6 elegant-input" hide-bottom-space tabindex="9" />
+                  :rules="[val => !!val || 'City is required']" hide-bottom-space tabindex="9" />
+                <q-input v-model="form.shipRegion" outlined label="Region" class="col-12 col-sm-6 elegant-input" hide-bottom-space tabindex="10" />
               </div>
 
               <div class="row q-col-gutter-md">
-                <q-input v-model="form.shipPostalCode" outlined label="Postal Code" class="col-12 col-sm-6 elegant-input" hide-bottom-space tabindex="10" />
+                <q-input v-model="form.shipPostalCode" outlined label="Postal Code" class="col-12 col-sm-6 elegant-input" hide-bottom-space tabindex="11" />
                 <q-input v-model="form.shipCountry" outlined label="Country *" class="col-12 col-sm-6 elegant-input"
-                  :rules="[val => !!val || 'Country is required']" hide-bottom-space tabindex="11" />
+                  :rules="[val => !!val || 'Country is required']" hide-bottom-space tabindex="12" />
               </div>
 
               <!-- Validate Address Button -->
@@ -426,11 +426,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import { api } from 'src/boot/axios'
 import { useOrderDraftStore } from 'src/stores/order-draft'
+import { useAddressValidation } from 'src/composables/useAddressValidation'
 
 const route = useRoute()
 const router = useRouter()
@@ -439,7 +440,6 @@ const $q = useQuasar()
 const isEdit = computed(() => !!route.params.id)
 const loadingOrder = ref(false)
 const saving = ref(false)
-const validatingAddress = ref(false)
 
 // ---- Form state ----
 
@@ -459,6 +459,8 @@ const form = reactive({
   lines: [],
 })
 
+const { geocodeResult, geocodeError, validatingAddress, canValidateAddress, validateAddress } = useAddressValidation(form)
+
 // ---- Reference data ----
 
 const customers = ref([])
@@ -468,15 +470,6 @@ const employees = ref([])
 // New products reference
 const products = ref([])
 const filteredProducts = ref({})
-
-// ---- Geocoding ----
-
-const geocodeResult = ref(null)
-const geocodeError = ref(null)
-
-const canValidateAddress = computed(() =>
-  form.shipStreet && form.shipCity && form.shipCountry
-)
 
 const mapEmbedUrl = computed(() => {
   if (!geocodeResult.value) return ''
@@ -499,8 +492,8 @@ function lineTotal (line) {
 
 function effectiveMaxQty(line) {
   if (line.unitsInStock == null) return null
-  // En edit mode: max = stock actual + lo que esta línea ya tenía reservado
-  // En create mode: originalQuantity es 0, así que max = stock actual
+  // In edit mode: max = current stock + what this line had already reserved
+  // In create mode: originalQuantity is 0, so max = current stock
   return line.unitsInStock + (line.originalQuantity ?? 0)
 }
 
@@ -520,7 +513,7 @@ function addLine () {
     unitPrice: 0,
     discount: 0,
     unitsInStock: null,
-    originalQuantity: 0, // Iniciar explícitamente en nueva línea
+    originalQuantity: 0,
   })
 }
 
@@ -537,7 +530,7 @@ function onProductSelected (index) {
     line.unitPrice = product.unitPrice
     line.productName = product.productName
     line.unitsInStock = product.unitsInStock ?? null
-    line.originalQuantity = 0 // AGREGAR: producto nuevo, nada reservado
+    line.originalQuantity = 0
   }
 }
 
@@ -577,43 +570,6 @@ function filterProducts (val, update, index) {
       p.productName.toLowerCase().includes(needle)
     )
   })
-}
-
-// ---- Debounced address validation ----
-let debounceTimer = null
-
-watch(
-  () => [form.shipStreet, form.shipCity, form.shipCountry],
-  () => {
-    geocodeResult.value = null
-    geocodeError.value = null
-    if (debounceTimer) clearTimeout(debounceTimer)
-    if (canValidateAddress.value) {
-      debounceTimer = setTimeout(() => { validateAddress() }, 600)
-    }
-  }
-)
-
-async function validateAddress () {
-  validatingAddress.value = true
-  geocodeResult.value = null
-  geocodeError.value = null
-  try {
-    const { data } = await api.get('/geocoding/validate', {
-      params: {
-        street: form.shipStreet,
-        city: form.shipCity,
-        region: form.shipRegion || undefined,
-        postalCode: form.shipPostalCode || undefined,
-        country: form.shipCountry,
-      }
-    })
-    geocodeResult.value = data
-  } catch (err) {
-    geocodeError.value = err.response?.data?.error || 'Address validation failed'
-  } finally {
-    validatingAddress.value = false
-  }
 }
 
 // ---- Submit ----
@@ -753,7 +709,7 @@ async function loadOrder () {
         unitPrice: l.unitPrice,
         discount: l.discount,
         unitsInStock: ref?.unitsInStock ?? null,
-        originalQuantity: l.quantity,  // AGREGAR: stock ya reservado por esta línea
+        originalQuantity: l.quantity, // already reserved by this line
       }
     })
   } catch (err) {

@@ -267,7 +267,9 @@ public class OrderServiceTests
         var result = await _sut.DeleteAsync(1);
 
         result.IsSuccess.Should().BeTrue();
-        _orderRepo.Verify(r => r.Remove(order), Times.Once);
+        order.IsDeleted.Should().BeTrue();
+        order.DeletedAt.Should().NotBeNull();
+        _orderRepo.Verify(r => r.Remove(It.IsAny<Order>()), Times.Never);
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -335,6 +337,7 @@ public class OrderServiceTests
             OrderId: 1,
             CustomerId: "ALFKI",
             EmployeeId: 1,
+            OrderDate: DateTime.UtcNow,
             ShipperId: null,
             ShipName: "Jane Doe",
             ShipStreet: "456 Oak Ave",
@@ -359,7 +362,7 @@ public class OrderServiceTests
             .ReturnsAsync((Order?)null);
 
         var cmd = new UpdateOrderCommand(
-            OrderId: 999, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 999, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
             ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
             Freight: 0, Lines: new List<OrderLineCommand> { new(11, 1, 0f) }
@@ -379,7 +382,7 @@ public class OrderServiceTests
             .ReturnsAsync(order);
 
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
             ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
             Freight: 0, Lines: new List<OrderLineCommand> { new(11, 1, 0f) }
@@ -399,7 +402,7 @@ public class OrderServiceTests
             .ReturnsAsync(order);
 
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
             ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
             Freight: 0, Lines: new List<OrderLineCommand>()
@@ -458,7 +461,7 @@ public class OrderServiceTests
     public async Task ShipAsync_ShouldUseProvidedShippedDate()
     {
         var order = CreateSampleOrder();
-        var expectedDate = new DateTime(2026, 5, 10, 0, 0, 0, DateTimeKind.Utc);
+        var expectedDate = order.OrderDate;
         _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(order);
         _productRepo.Setup(p => p.GetByIdAsync(11, It.IsAny<CancellationToken>()))
@@ -731,7 +734,7 @@ public class OrderServiceTests
             .ReturnsAsync(product);
 
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
             ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
             Freight: 20m,
@@ -757,7 +760,7 @@ public class OrderServiceTests
             .ReturnsAsync(product);
 
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
             ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
             Freight: 20m,
@@ -857,7 +860,7 @@ public class OrderServiceTests
             .ReturnsAsync(FakeProduct(11, 20m));
 
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
             ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
             Freight: 20m,
@@ -921,7 +924,7 @@ public class OrderServiceTests
             .ReturnsAsync(order);
 
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
             ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
             Freight: 20m,
@@ -939,6 +942,194 @@ public class OrderServiceTests
         // No stock operations should occur — check fires before reconciliation
         _productRepo.Verify(p => p.GetByIdTrackedAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ==================================================================
+    // UpdateOrderDate scenarios
+    // ==================================================================
+
+    [Fact]
+    public async Task UpdateAsync_ChangesOrderDate_WhenDateIsValid()
+    {
+        var order = CreateSampleOrder();
+        var newOrderDate = DateTime.UtcNow.AddDays(-5);
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: newOrderDate, ShipperId: null,
+            ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
+            ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
+            Freight: 15m,
+            Lines: new List<OrderLineCommand> { new(11, 2, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.OrderDate.Should().Be(newOrderDate);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Fails_WhenOrderDateIsInTheFuture()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow.AddDays(5), ShipperId: null,
+            ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
+            ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
+            Freight: 15m,
+            Lines: new List<OrderLineCommand> { new(11, 2, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.FutureOrderDate");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_PreservesExistingOrderDate_WhenSameValuePassed()
+    {
+        var order = CreateSampleOrder();
+        var existingDate = order.OrderDate;
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var cmd = new UpdateOrderCommand(
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: existingDate, ShipperId: null,
+            ShipName: "Jane Doe", ShipStreet: "456 Oak Ave", ShipCity: "LA",
+            ShipRegion: "CA", ShipPostalCode: "90001", ShipCountry: "USA",
+            Freight: 15m,
+            Lines: new List<OrderLineCommand> { new(11, 2, 0f) }
+        );
+
+        var result = await _sut.UpdateAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.OrderDate.Should().Be(existingDate);
+    }
+
+    // ==================================================================
+    // SoftDelete / Restore / GetArchived
+    // ==================================================================
+
+    [Fact]
+    public async Task DeleteAsync_SetsSoftDeleteState_WhenOrderIsPending()
+    {
+        var order = CreateSampleOrder();
+        _orderRepo.Setup(r => r.GetByIdAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var result = await _sut.DeleteAsync(1);
+
+        result.IsSuccess.Should().BeTrue();
+        order.IsDeleted.Should().BeTrue();
+        order.DeletedAt.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task RestoreAsync_Succeeds_WhenOrderIsSoftDeleted()
+    {
+        var order = CreateSampleOrder();
+        order.SoftDelete();
+        _orderRepo.Setup(r => r.GetByIdIncludingDeletedAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(FakeProduct(11, 20m));
+
+        var result = await _sut.RestoreAsync(1);
+
+        result.IsSuccess.Should().BeTrue();
+        order.IsDeleted.Should().BeFalse();
+        order.DeletedAt.Should().BeNull();
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RestoreAsync_ReDecrementsStock_WhenRestoring()
+    {
+        var product = FakeProduct(11, 20m); // 100 units
+        var order = CreateSampleOrder();    // line: productId=11, qty=2
+        order.SoftDelete();
+        _orderRepo.Setup(r => r.GetByIdIncludingDeletedAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var result = await _sut.RestoreAsync(1);
+
+        result.IsSuccess.Should().BeTrue();
+        product.UnitsInStock.Should().Be(98); // 100 - 2 re-decremented
+    }
+
+    [Fact]
+    public async Task RestoreAsync_Fails_WhenOrderNotFound()
+    {
+        _orderRepo.Setup(r => r.GetByIdIncludingDeletedAsync(999, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Order?)null);
+
+        var result = await _sut.RestoreAsync(999);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.NotFound");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RestoreAsync_Fails_WhenOrderIsNotSoftDeleted()
+    {
+        var order = CreateSampleOrder(); // IsDeleted = false
+        _orderRepo.Setup(r => r.GetByIdIncludingDeletedAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+
+        var result = await _sut.RestoreAsync(1);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Order.NotDeleted");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RestoreAsync_Fails_WhenStockInsufficient()
+    {
+        var product = new Product(11, "Product 11", new Money(20m, "USD"), false, (short)0);
+        var order = CreateSampleOrder(); // line: productId=11, qty=2
+        order.SoftDelete();
+        _orderRepo.Setup(r => r.GetByIdIncludingDeletedAsync(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(order);
+        _productRepo.Setup(p => p.GetByIdTrackedAsync(11, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(product);
+
+        var result = await _sut.RestoreAsync(1);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Product.InsufficientStock");
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetArchivedAsync_ReturnsMappedDtos()
+    {
+        var order = CreateSampleOrder();
+        order.SoftDelete();
+        _orderRepo.Setup(r => r.GetArchivedAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Order> { order }.AsReadOnly());
+
+        var result = await _sut.GetArchivedAsync();
+
+        result.Should().HaveCount(1);
+        result[0].CustomerId.Should().Be("ALFKI");
     }
 }
 
