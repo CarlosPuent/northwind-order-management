@@ -4,6 +4,7 @@ USER root
 
 COPY 01-northwind.sql /docker-entrypoint-initdb.d/
 COPY 02-shipping-geocodes.sql /docker-entrypoint-initdb.d/
+COPY 03-soft-delete.sql /docker-entrypoint-initdb.d/
 COPY init-db.sh /docker-entrypoint-initdb.d/
 
 # Strip Windows CRLF line endings and set executable permission
