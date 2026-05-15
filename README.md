@@ -184,7 +184,7 @@ Expected:
 
 - **216 tests passed · 0 failures**
 - Coverage report opens automatically (also available at `backend/coverage-report/index.html`)
-- **90%+ line coverage** in the generated report
+- **~90% (Domain + Application + API layers)**
 
 ---
 
