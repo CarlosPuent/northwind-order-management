@@ -66,6 +66,21 @@ internal sealed class OrderRepository : IOrderRepository
         return new PagedResult<Order>(items, page, pageSize, totalCount);
     }
 
+    public async Task<Order?> GetByIdIncludingDeletedAsync(
+        int id, CancellationToken cancellationToken = default)
+        => await _db.Orders
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<Order>> GetArchivedAsync(
+        CancellationToken cancellationToken = default)
+        => await _db.Orders
+            .AsNoTracking()
+            .IgnoreQueryFilters()
+            .Where(o => o.IsDeleted)
+            .OrderByDescending(o => o.DeletedAt)
+            .ToListAsync(cancellationToken);
+
     public void Add(Order order) => _db.Orders.Add(order);
 
     public void Remove(Order order) => _db.Orders.Remove(order);

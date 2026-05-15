@@ -33,6 +33,8 @@ public sealed class NorthwindDbContext : DbContext
         // No need to remember adding each one by hand — EF Core scans for them.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(NorthwindDbContext).Assembly);
 
+        modelBuilder.Entity<Order>().HasQueryFilter(o => !o.IsDeleted);
+
         base.OnModelCreating(modelBuilder);
     }
 }

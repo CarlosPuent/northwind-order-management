@@ -32,4 +32,7 @@ fi
 echo "Applying ShippingGeocodes migration..."
 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -d Northwind \
     -i /docker-entrypoint-initdb.d/02-shipping-geocodes.sql
+echo "Applying SoftDelete migration..."
+/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$SA_PASSWORD" -C -d Northwind \
+    -i /docker-entrypoint-initdb.d/03-soft-delete.sql
 echo "Database initialization complete."

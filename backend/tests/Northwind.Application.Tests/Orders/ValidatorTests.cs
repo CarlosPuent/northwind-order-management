@@ -84,7 +84,7 @@ public class ValidatorTests
     {
         var validator = new UpdateOrderCommandValidator();
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
             ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
             Freight: 0, Lines: new List<OrderLineCommand> { new(1, 1, 0f) });
@@ -99,7 +99,7 @@ public class ValidatorTests
     {
         var validator = new UpdateOrderCommandValidator();
         var cmd = new UpdateOrderCommand(
-            OrderId: 0, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 0, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
             ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
             Freight: 0, Lines: new List<OrderLineCommand> { new(1, 1, 0f) });
@@ -115,7 +115,7 @@ public class ValidatorTests
     {
         var validator = new UpdateOrderCommandValidator();
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
             ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
             Freight: 0, Lines: new List<OrderLineCommand>());
@@ -131,7 +131,7 @@ public class ValidatorTests
     {
         var validator = new UpdateOrderCommandValidator();
         var cmd = new UpdateOrderCommand(
-            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, ShipperId: null,
+            OrderId: 1, CustomerId: "ALFKI", EmployeeId: 1, OrderDate: DateTime.UtcNow, ShipperId: null,
             ShipName: "John", ShipStreet: "123 St", ShipCity: "NYC",
             ShipRegion: null, ShipPostalCode: null, ShipCountry: "USA",
             Freight: -5m, Lines: new List<OrderLineCommand> { new(1, 1, 0f) });

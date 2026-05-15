@@ -7,7 +7,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "echo \"No test specified\" && exit 0",
+    "test": "vitest run",
     "dev": "quasar dev",
     "build": "quasar build",
     "postinstall": "quasar prepare"
@@ -28,8 +28,12 @@
   },
   "devDependencies": {
     "@quasar/app-vite": "^2.5.1",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "@vue/test-utils": "^2.4.10",
     "autoprefixer": "^10.4.27",
-    "postcss": "^8.5.8"
+    "jsdom": "^29.1.1",
+    "postcss": "^8.5.8",
+    "vitest": "^4.1.6"
   },
   "engines": {
     "node": "^28 || ^26 || ^24 || ^22.12",

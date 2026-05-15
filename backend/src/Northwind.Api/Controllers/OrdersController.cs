@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Northwind.Application.Orders;
 using Northwind.Application.Orders.Commands;
+using Northwind.Application.Orders.Dtos;
 using Northwind.Domain.Common;
 
 namespace Northwind.Api.Controllers;
@@ -58,6 +59,23 @@ public sealed class OrdersController : ControllerBase
     {
         var result = await _orderService.GetPagedAsync(
             page, pageSize, customerId, region, isShipped, fromDate, toDate, cancellationToken);
+        return Ok(result);
+    }
+
+    // ------------------------------------------------------------------
+    // GET /api/orders/archived
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns all soft-deleted orders. These orders are excluded from the
+    /// main list and can be restored via POST /api/orders/{id}/restore.
+    /// </summary>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpGet("archived")]
+    [ProducesResponseType(typeof(IEnumerable<OrderDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetArchived(CancellationToken cancellationToken)
+    {
+        var result = await _orderService.GetArchivedAsync(cancellationToken);
         return Ok(result);
     }
 
@@ -177,7 +195,8 @@ public sealed class OrdersController : ControllerBase
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// Permanently deletes a pending order including all line items.
+    /// Soft-deletes a pending order. The order is hidden from the main list
+    /// and can be restored via POST /api/orders/{id}/restore.
     /// Shipped orders cannot be deleted (returns 409 Conflict).
     /// </summary>
     /// <param name="id">The order ID to delete.</param>
@@ -189,6 +208,28 @@ public sealed class OrdersController : ControllerBase
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _orderService.DeleteAsync(id, cancellationToken);
+        return result.IsSuccess
+            ? NoContent()
+            : ToProblemDetails(result.Error);
+    }
+
+    // ------------------------------------------------------------------
+    // POST /api/orders/{id}/restore
+    // ------------------------------------------------------------------
+
+    /// <summary>
+    /// Restores a soft-deleted order, making it visible again in the main list.
+    /// Re-decrements stock for all line items. Returns 409 if the order is not deleted.
+    /// </summary>
+    /// <param name="id">The order ID to restore.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    [HttpPost("{id:int}/restore")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Restore(int id, CancellationToken cancellationToken)
+    {
+        var result = await _orderService.RestoreAsync(id, cancellationToken);
         return result.IsSuccess
             ? NoContent()
             : ToProblemDetails(result.Error);
