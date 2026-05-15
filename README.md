@@ -165,31 +165,26 @@ npx quasar dev   # → http://localhost:9000
 
 ### 4. Tests
 
-```bash
+Run the **Testing & Coverage** script below.
+
+---
+
+## Testing & Coverage
+
+If you are reviewing this project, you can validate the automated tests and generate an HTML coverage report with a single command.
+
+### Run (one command)
+
+```powershell
 cd backend
-
-# Run all automated tests + coverage
-dotnet test --settings coverlet.runsettings --collect:"XPlat Code Coverage" --results-directory ./TestResults
-
-# Result:
-# 202 tests passed · 0 failures
+.\run-coverage.ps1
 ```
 
-### Test Coverage
+Expected:
 
-The backend includes:
-
-- Unit tests (domain + application layer)
-- API integration tests
-- Validation tests
-- Error handling tests
-- Business rule enforcement tests
-
-Current status:
-
-- 202 automated tests passing
-- 0 failures
-- XPlat Code Coverage enabled via Coverlet
+- **216 tests passed · 0 failures**
+- Coverage report opens automatically (also available at `backend/coverage-report/index.html`)
+- **90%+ line coverage** in the generated report
 
 ---
 

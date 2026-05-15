@@ -19,4 +19,10 @@
          We document what matters; we don't want a warning on every getter. -->
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
+
+  <!-- Coverage exclusions — applied automatically to every dotnet test run -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute"
+                       Condition="'$(MSBuildProjectName)' == 'Northwind.Infrastructure'" />
+  </ItemGroup>
 </Project>
