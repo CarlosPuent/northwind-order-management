@@ -16,6 +16,32 @@ A production-style order management system built on the Northwind dataset. Featu
 
 The entire stack runs with a single command. No SQL Server, .NET, or Node.js required — only Docker Desktop.
 
+### Windows Requirements (Docker + WSL2)
+
+SQL Server 2022 requires a minimum of **2 GB RAM** allocated to Docker.
+On Windows with WSL2, the default memory limit may cause the database
+container to fail silently with a `Waiting...` loop.
+
+**Fix before running the project:**
+
+1. Create or edit `~/.wslconfig` (in your Windows user folder `C:\Users\YourName\`):
+
+   ```ini
+   [wsl2]
+   memory=4GB
+   ```
+
+2. Restart Docker Desktop completely (right-click the whale icon → Quit, then reopen)
+
+3. Then run:
+
+   ```bash
+   docker compose down -v
+   docker compose up --build
+   ```
+
+> This is a one-time setup. Once configured, the project starts with a single command.
+
 ### Step 1 — Install Docker Desktop
 
 Download and install from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop). Make sure it is running before continuing.

@@ -44,3 +44,6 @@ Thumbs.db
 
 # Claude AI workspace
 **/.claude/
+
+# VS Code project cache
+**/*.lscache
