@@ -6,7 +6,7 @@
 ![Vue 3](https://img.shields.io/badge/Vue_3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)
 ![SQL Server](https://img.shields.io/badge/SQL_Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-202_passing-2D7A3E?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-216_passing-2D7A3E?style=flat-square)
 
 A production-style order management system built on the Northwind dataset. Features real-time Google Maps address validation, QuestPDF invoice generation, an analytics dashboard, and a complete order lifecycle — from creation to shipment.
 
@@ -184,7 +184,7 @@ Expected:
 
 - **216 tests passed · 0 failures**
 - Coverage report opens automatically (also available at `backend/coverage-report/index.html`)
-- **90%+ line coverage** in the generated report
+- **~90% (Domain + Application + API layers)**
 
 ---
 
