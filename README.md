@@ -6,7 +6,7 @@
 ![Vue 3](https://img.shields.io/badge/Vue_3-4FC08D?style=flat-square&logo=vue.js&logoColor=white)
 ![SQL Server](https://img.shields.io/badge/SQL_Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-125_passing-2D7A3E?style=flat-square)
+![Tests](https://img.shields.io/badge/Tests-202_passing-2D7A3E?style=flat-square)
 
 A production-style order management system built on the Northwind dataset. Features real-time Google Maps address validation, QuestPDF invoice generation, an analytics dashboard, and a complete order lifecycle — from creation to shipment.
 
@@ -141,8 +141,29 @@ npx quasar dev   # → http://localhost:9000
 
 ```bash
 cd backend
-dotnet test      # 125 tests, 0 failures
+
+# Run all automated tests + coverage
+dotnet test --settings coverlet.runsettings --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+# Result:
+# 202 tests passed · 0 failures
 ```
+
+### Test Coverage
+
+The backend includes:
+
+- Unit tests (domain + application layer)
+- API integration tests
+- Validation tests
+- Error handling tests
+- Business rule enforcement tests
+
+Current status:
+
+- 202 automated tests passing
+- 0 failures
+- XPlat Code Coverage enabled via Coverlet
 
 ---
 
@@ -186,6 +207,12 @@ API → Application → Domain ← Infrastructure
 | Two-layer validation                     | FluentValidation catches bad input at the API boundary (400); domain validates business rules (422) |
 
 ---
+
+## Architecture Diagrams
+
+Detailed architecture diagrams and system design documentation are available here:
+
+[View Architecture PDF](docs/northwind-architecture.pdf)
 
 ## API Reference
 
